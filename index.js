@@ -2,8 +2,12 @@ require("dotenv").config()
 const express = require("express")
 const { decorateApp } = require("@awaitjs/express")
 const { spawn } = require("child_process")
+const Sentry = require('@sentry/node')
+
+Sentry.init({ dsn: process.env.SENTRY_DSN });
 
 const app = decorateApp(express())
+app.use(Sentry.Handlers.requestHandler())
 app.use(express.json())
 
 function runDivvunChecker(tag, text) {
@@ -40,6 +44,12 @@ app.postAsync("/grammar/:tag", async (req, res) => {
 
   res.setHeader('Content-Type', 'application/json')
 
+  if (text == null || typeof text !== "string") {
+    res.status(400)
+    res.send(JSON.stringify({ error: "`text` field must not be null and must be a string" }))
+    return
+  }
+
   try {
     const results = await runDivvunChecker(tag, text)
     res.send(JSON.stringify({ results }))
@@ -52,6 +62,15 @@ app.postAsync("/grammar/:tag", async (req, res) => {
       res.send(JSON.stringify({ error: "Internal server error" }))
     }
   }
+})
+
+app.use(Sentry.Handlers.errorHandler())
+
+app.use(function onError(err, req, res, next) {
+  // The error id is attached to `res.sentry` to be returned
+  // and optionally displayed to the user for support.
+  res.statusCode = 500
+  res.send(JSON.stringify({ error: "Internal server error", id: res.sentry }))
 })
 
 const port = process.env.PORT || 8000
