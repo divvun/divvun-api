@@ -55,4 +55,5 @@ app.postAsync("/grammar/:tag", async (req, res) => {
 })
 
 const port = process.env.PORT || 8000
-app.listen(port, () => console.log(`Listening on http://127.0.0.1:${port}`))
+const host = process.env.HOST || "127.0.0.1"
+app.listen(port, host, () => console.log(`Listening on http://127.0.0.1:${port}`))
