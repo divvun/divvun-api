@@ -10,11 +10,11 @@ function runDivvunChecker(tag, text) {
   const p = spawn("docker", ["run", "-i", "divvun-gramcheck", `${tag}.zcheck`])
   
   return new Promise((resolve, reject) => {
-    let out = ""
+    let out = []
     let err = ""
 
     p.stdout.on('data', (data) => {
-      out += data
+      out.push(JSON.parse(data))
     })
     
     p.stderr.on('data', (data) => {
@@ -41,8 +41,8 @@ app.postAsync("/grammar/:tag", async (req, res) => {
   res.setHeader('Content-Type', 'application/json')
 
   try {
-    const out = await runDivvunChecker(tag, text)
-    res.send(out)
+    const results = await runDivvunChecker(tag, text)
+    res.send(JSON.stringify({ results }))
   } catch (err) {
     if (err.message.startsWith("Archive path not OK")) {
       res.status(400)
@@ -56,4 +56,4 @@ app.postAsync("/grammar/:tag", async (req, res) => {
 
 const port = process.env.PORT || 8000
 const host = process.env.HOST || "127.0.0.1"
-app.listen(port, host, () => console.log(`Listening on http://127.0.0.1:${port}`))
+app.listen(port, host, () => console.log(`Listening on http://${host}:${port}`))
