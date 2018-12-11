@@ -11,21 +11,21 @@ app.use(Sentry.Handlers.requestHandler())
 app.use(express.json())
 
 function runDivvunChecker(tag, text) {
-  const p = spawn("docker", ["run", "-i", "divvun-gramcheck", `${tag}.zcheck`])
+  const checker = spawn("divvun-checker", ["-a", `${tag}.zcheck`])
   
   return new Promise((resolve, reject) => {
     let out = []
     let err = ""
 
-    p.stdout.on('data', (data) => {
+    checker.stdout.on('data', (data) => {
       out.push(JSON.parse(data))
     })
     
-    p.stderr.on('data', (data) => {
+    checker.stderr.on('data', (data) => {
       err += data
     })
     
-    p.on('exit', (code) => {
+    checker.on('exit', (code) => {
       if (code != 0) {
         reject(new Error(err))
       } else {
@@ -33,8 +33,8 @@ function runDivvunChecker(tag, text) {
       }
     })
 
-    p.stdin.write(text)
-    p.stdin.end()
+    checker.stdin.write(text)
+    checker.stdin.end()
   })
 }
 
