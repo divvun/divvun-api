@@ -10,6 +10,11 @@ const app = decorateApp(express())
 app.use(Sentry.Handlers.requestHandler())
 app.use(express.json())
 
+app.use((err, req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*")
+  next()
+})
+
 function runDivvunChecker(tag, text) {
   const checker = spawn("divvun-checker", ["-a", `${tag}.zcheck`])
   
