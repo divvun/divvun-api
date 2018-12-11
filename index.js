@@ -48,6 +48,7 @@ app.postAsync("/grammar/:tag", async (req, res) => {
   const { text } = req.body
 
   res.setHeader('Content-Type', 'application/json')
+  res.setHeader("Access-Control-Allow-Origin", "*")
 
   if (text == null || typeof text !== "string") {
     res.status(400)
