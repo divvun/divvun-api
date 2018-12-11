@@ -3,6 +3,7 @@ const express = require("express")
 const { decorateApp } = require("@awaitjs/express")
 const { spawn } = require("child_process")
 const Sentry = require('@sentry/node')
+const ndjson = require("ndjson")
 
 Sentry.init({ dsn: process.env.SENTRY_DSN });
 
@@ -19,9 +20,11 @@ function runDivvunChecker(tag, text) {
     let out = []
     let err = ""
 
-    checker.stdout.on('data', (data) => {
-      out.push(JSON.parse(data))
-    })
+    checker.stdout
+      .pipe(ndjson.parse())
+      .on('data', (data) => {
+        out.push(data)
+      })
     
     checker.stderr.on('data', (data) => {
       err += data

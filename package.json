@@ -15,6 +15,8 @@
   "dependencies": {
     "@awaitjs/express": "^0.1.4",
     "@sentry/node": "^4.4.1",
-    "dotenv": "^6.1.0"
+    "cors": "^2.8.5",
+    "dotenv": "^6.1.0",
+    "ndjson": "^1.5.0"
   }
 }
