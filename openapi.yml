@@ -1,0 +1,147 @@
+openapi: 3.0.0
+info:
+  title: "Divvun Grammar Checker Server API"
+  version: "0.1.0"
+  contact:
+    name: Brendan Molloy
+    email: brendan@technocreatives.com
+servers:
+  - url: https://divvun-api.brendan.so/
+    description: Staging server
+paths:
+  /spelling/{languageCode}:
+    parameters:
+    - name: languageCode
+      in: path
+      required: true
+      example: se
+      description: The specified language
+      schema:
+        type: string
+    post:
+      operationId: postSpellCheck
+      summary: Returns spelling check results
+      description: Returns spelling check results for the supplied text and language
+      requestBody:
+        $ref: "#/components/schemas/SpellCheckRequest"
+      responses:
+        '200':
+          description: List of spelling check results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SpellCheckResult"
+        default:
+          description: Error
+  /grammar/{languageCode}:
+    parameters:
+    - name: languageCode
+      in: path
+      required: true
+      example: se
+      description: The specified language
+      schema:
+        type: string
+    post:
+      operationId: postGrammarCheck
+      summary: Returns grammar check results
+      description: Returns grammar check results for the supplied text and language
+      requestBody:
+        $ref: "#/components/schemas/GrammarCheckRequest"
+      responses:
+        '200':
+          description: List of grammar check results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GrammarCheckResult"
+        default:
+          description: Error
+components:
+  schemas:
+    SpellCheckRequest:
+      type: object
+      required:
+        - word
+      properties:
+        word:
+          type: string
+    GrammarCheckRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+    GrammarError:
+      type: object
+      required:
+        - error_text
+        - start_index
+        - end_index
+        - error_code
+        - description
+        - suggestions
+      properties:
+        error_text:
+          type: string
+          example: "servodat dilálašvuođain"
+          description: The part of the text which is incorrect
+        start_index:
+          type: integer
+          example: 167
+          description: The starting index of the error_text within the submitted text
+        end_index:
+          type: integer
+          example: 190
+          description: The ending index of the error_text within the submitted text
+        error_code:
+          type: string
+          example: "msyn-compound"
+          description: The identifier of the error
+        description:
+          type: string
+          example: servodat dilálašvuođain berrešii leat oktan sátnin.
+          description: The human readable description of what the error is
+        suggestions:
+          type: array
+          description: A list of suggestions for replacing the error_text
+          items:
+            type: string
+            example: servodatdilálašvuođain
+            
+    GrammarCheckResult:
+      type: object
+      required:
+        - text
+        - errs
+      properties:
+        text:
+          type: string
+          description: The text to which the errors relate to
+          example: Bealljeheamit leat, nu movt Norgga Bealljehemiidlihttu oaidná, duvdojuvvon olggobeallai diehtojuohkinservodaga, miidagaha ahte bealljeheamit dávjá ožžot unnit dieđuid servodat dilálašvuođain.
+        errs:
+          type: array
+          items:
+            $ref: "#/components/schemas/GrammarError"
+
+    SpellCheckResult:
+      type: object
+      required:
+        - word
+        - suggestions
+      properties:
+          word:
+            type: string
+            description: The misspelled word
+            example: oainá
+          suggestions:
+            type: array
+            items:
+              type: string
+              example: oaidná
+

@@ -1,0 +1,16 @@
+[package]
+name = "divvun-api"
+version = "0.1.0"
+authors = ["Brendan Molloy <brendan@technocreatives.com>"]
+edition = "2018"
+
+[dependencies]
+actix-web = "0.7"
+actix = "0.7"
+serde = "1.0.88"
+serde_json = "1.0.38"
+serde_derive = "1.0.88"
+divvunspell = { git = "https://github.com/divvun/divvunspell" }
+futures = "*"
+failure = "*"
+hashbrown = "*"
