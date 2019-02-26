@@ -13,9 +13,11 @@ use sentry_actix::SentryMiddleware;
 
 mod speller;
 mod grammar;
+mod data_files;
 
 use speller::{DivvunSpellExecutor, post_speller};
 use grammar::{GramcheckExecutor, post_gramcheck};
+use data_files::{get_data_files, DataFileType};
 
 #[derive(Fail, Debug)]
 #[fail(display="api error")]
@@ -43,21 +45,48 @@ fn main() {
     // Start http server
     HttpServer::new(move || {
 
+        let grammar_data_files = match get_data_files(&DataFileType::Grammar) {
+            Ok(v) => v,
+            Err(_) => {
+                eprintln!("Error getting grammar data files");
+                vec![]
+            }
+        };
+        let spelling_data_files = match get_data_files(&DataFileType::Spelling) {
+            Ok(v) => v,
+            Err(_) => {
+                eprintln!("Error getting spelling data files");
+                vec![]
+            }
+        };
+        
         // Start 3 parallel speller executors
         let spellers = {
             let mut s = HashMap::new();
-            s.insert("se".into(), SyncArbiter::start(3, || {
-                let ar = SpellerArchive::new("./se-stored.zhfst");
-                DivvunSpellExecutor(ar.unwrap())
-            }));
+
+            for f in spelling_data_files.into_iter() {
+                let lang_code = f.file_stem().unwrap().to_str().unwrap();
+                s.insert(lang_code.into(), SyncArbiter::start(3, move || {
+                    let speller_path = f.to_str().unwrap();
+                    let ar = SpellerArchive::new(speller_path);
+                    DivvunSpellExecutor(ar.unwrap())
+                }));
+            }
+            
             s
         };
 
         let gramcheckers = {
             let mut s = HashMap::new();
-            s.insert("se".into(), SyncArbiter::start(3, || {
-                GramcheckExecutor::new("se").unwrap()
-            }));
+
+            for f in grammar_data_files.into_iter() {
+                let lang_code = f.file_stem().unwrap().to_str().unwrap();
+                s.insert(lang_code.into(), SyncArbiter::start(3, move || {
+                let grammar_checker_path = f.to_str().unwrap();
+                    GramcheckExecutor::new(grammar_checker_path).unwrap()
+                }));
+            }
+
             s
         };
 
