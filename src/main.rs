@@ -1,6 +1,6 @@
-use actix_web::{server, App, HttpRequest, HttpResponse, http::Method, server::HttpServer, AsyncResponder, middleware};
+use actix_web::{App, http::Method, server::HttpServer, middleware};
 use actix::prelude::*;
-use divvunspell::archive::{SpellerArchive, SpellerArchiveError};
+use divvunspell::archive::{SpellerArchive};
 use failure::Fail;
 use hashbrown::HashMap;
 

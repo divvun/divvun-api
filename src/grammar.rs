@@ -1,5 +1,4 @@
-use actix_web::{server, App, HttpRequest, Json, Path, HttpResponse, State, http::Method, server::HttpServer, AsyncResponder};
-use actix_web::HttpMessage;
+use actix_web::{Json, Path, HttpResponse, State, AsyncResponder};
 
 use futures::future::{Future, result};
 use actix::prelude::*;
@@ -16,7 +15,7 @@ pub struct GramcheckExecutor(pub Child);
 
 impl GramcheckExecutor {
     pub fn new(language_code: &str) -> Result<Self, std::io::Error> {
-        let mut process = Command::new("divvun-checker")
+        let process = Command::new("divvun-checker")
             .arg("-a")
             .arg(format!("{}.zcheck", language_code))
             .stdin(Stdio::piped())
@@ -45,7 +44,7 @@ impl Handler<GramcheckRequest> for GramcheckExecutor {
     type Result = Result<GramcheckOutput, ApiError>;
 
     fn handle(&mut self, msg: GramcheckRequest, _: &mut Self::Context) -> Self::Result {
-        let mut stdin = self.0.stdin.as_mut().expect("Failed to open stdin");
+        let stdin = self.0.stdin.as_mut().expect("Failed to open stdin");
         let mut stdout = BufReader::new(self.0.stdout.as_mut().unwrap());
 
         stdin.write_all(msg.text.as_bytes()).unwrap();

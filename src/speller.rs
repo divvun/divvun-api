@@ -1,7 +1,7 @@
-use actix_web::{server, App, HttpRequest, HttpResponse, Json, Path, State, http::Method, server::HttpServer, AsyncResponder};
+use actix_web::{HttpResponse, Json, Path, State, AsyncResponder};
 use futures::future::{Future, result};
 use actix::prelude::*;
-use divvunspell::archive::{SpellerArchive, SpellerArchiveError};
+use divvunspell::archive::{SpellerArchive};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{ApiError, State as AppState};
