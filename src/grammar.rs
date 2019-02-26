@@ -14,10 +14,10 @@ use std::process::{Command, Stdio, Child};
 pub struct GramcheckExecutor(pub Child);
 
 impl GramcheckExecutor {
-    pub fn new(language_code: &str) -> Result<Self, std::io::Error> {
+    pub fn new(data_file_path: &str) -> Result<Self, std::io::Error> {
         let process = Command::new("divvun-checker")
             .arg("-a")
-            .arg(format!("{}.zcheck", language_code))
+            .arg(data_file_path)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
