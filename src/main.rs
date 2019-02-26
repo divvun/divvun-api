@@ -4,6 +4,13 @@ use divvunspell::archive::{SpellerArchive, SpellerArchiveError};
 use failure::Fail;
 use hashbrown::HashMap;
 
+use std::env;
+use dotenv::dotenv;
+use dotenv_codegen::{dotenv, expand_dotenv};
+
+use sentry;
+use sentry_actix::SentryMiddleware;
+
 mod speller;
 mod grammar;
 
@@ -25,6 +32,12 @@ pub struct State {
 impl actix_web::error::ResponseError for ApiError {}
 
 fn main() {
+    dotenv().ok();
+    let sentry_dsn = dotenv!("SENTRY_DSN");
+    let _guard = sentry::init(sentry_dsn);
+    env::set_var("RUST_BACKTRACE", "1");
+    sentry::integrations::panic::register_panic_handler();
+
     let sys = actix::System::new("divvun-api");
 
     // Start http server
@@ -51,6 +64,7 @@ fn main() {
         let state = State { spellers, gramcheckers };
         App::with_state(state)
             .middleware(middleware::Logger::default())
+            .middleware(SentryMiddleware::builder().emit_header(true).finish())
             .resource("/speller/{languageCode}", |r| r.method(Method::POST).with_async(post_speller))
             .resource("/grammar/{languageCode}", |r| r.method(Method::POST).with_async(post_gramcheck))
     })
