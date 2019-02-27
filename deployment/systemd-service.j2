@@ -1,0 +1,13 @@
+[Unit]
+Description=Divvun API
+After=network.target
+
+[Service]
+Type=simple
+User=api
+WorkingDirectory=/home/{{ api_server_user }}
+ExecStart=/home/{{ api_server_user }}/divvun-api/target/release/divvun-api
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
