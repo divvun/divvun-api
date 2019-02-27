@@ -45,50 +45,42 @@ fn main() {
     // Start http server
     HttpServer::new(move || {
 
-        let grammar_data_files = match get_data_files(&DataFileType::Grammar) {
-            Ok(v) => v,
-            Err(_) => {
-                eprintln!("Error getting grammar data files");
-                vec![]
-            }
-        };
-        let spelling_data_files = match get_data_files(&DataFileType::Spelling) {
-            Ok(v) => v,
-            Err(_) => {
-                eprintln!("Error getting spelling data files");
-                vec![]
-            }
-        };
+        let grammar_data_files = get_data_files(DataFileType::Grammar).unwrap_or_else(|e| {
+            eprintln!("Error getting grammar data files: {}", e);
+            vec![]
+        });
+        
+        let spelling_data_files = get_data_files(DataFileType::Spelling).unwrap_or_else(|e| {
+            eprintln!("Error getting spelling data files: {}", e);
+            vec![]
+        });
         
         // Start 3 parallel speller executors
-        let spellers = {
-            let mut s = HashMap::new();
+        let spellers = spelling_data_files
+            .into_iter()
+            .map(|f| {
+                let lang_code = f.file_stem().expect(&format!("oops, didn't find a file stem for {:?}", f)).to_str().unwrap();
 
-            for f in spelling_data_files.into_iter() {
-                let lang_code = f.file_stem().unwrap().to_str().unwrap();
-                s.insert(lang_code.into(), SyncArbiter::start(3, move || {
+                (lang_code.into(), SyncArbiter::start(3, move || {
                     let speller_path = f.to_str().unwrap();
                     let ar = SpellerArchive::new(speller_path);
                     DivvunSpellExecutor(ar.unwrap())
-                }));
-            }
-            
-            s
-        };
+                }))
+            })
+            .collect();
 
-        let gramcheckers = {
-            let mut s = HashMap::new();
-
-            for f in grammar_data_files.into_iter() {
+        // Start 3 parallel grammar checker executors
+        let gramcheckers = grammar_data_files
+            .into_iter()
+            .map(|f| {
                 let lang_code = f.file_stem().unwrap().to_str().unwrap();
-                s.insert(lang_code.into(), SyncArbiter::start(3, move || {
+                
+                (lang_code.into(), SyncArbiter::start(3, move || {
                 let grammar_checker_path = f.to_str().unwrap();
                     GramcheckExecutor::new(grammar_checker_path).unwrap()
-                }));
-            }
-
-            s
-        };
+                }))
+            })
+            .collect();
 
         let state = State { spellers, gramcheckers };
         App::with_state(state)
