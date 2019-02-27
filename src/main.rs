@@ -1,4 +1,4 @@
-use actix_web::{App, http::Method, server::HttpServer, middleware};
+use actix_web::{App, http::header, http::Method, server::HttpServer, middleware, middleware::cors::Cors};
 use actix::prelude::*;
 use divvunspell::archive::{SpellerArchive};
 use failure::Fail;
@@ -81,13 +81,27 @@ fn main() {
                 }))
             })
             .collect();
+            
 
         let state = State { spellers, gramcheckers };
         App::with_state(state)
             .middleware(middleware::Logger::default())
             .middleware(SentryMiddleware::builder().emit_header(true).finish())
-            .resource("/speller/{languageCode}", |r| r.method(Method::POST).with_async(post_speller))
-            .resource("/grammar/{languageCode}", |r| r.method(Method::POST).with_async(post_gramcheck))
+            .configure(|app| {
+                Cors::for_app(app)
+                    .send_wildcard()
+                    .allowed_methods(vec!["POST"])
+                    .allowed_headers(vec![header::ACCEPT])
+                    .allowed_header(header::CONTENT_TYPE)
+                    .max_age(3600)
+                    .resource("/grammar/{languageCode}", |r| {
+                        r.method(Method::POST).with_async(post_gramcheck);
+                    })
+                    .resource("/speller/{languageCode}", |r| {
+                        r.method(Method::POST).with_async(post_speller);
+                    })
+                    .register()
+            })
     })
     .bind("127.0.0.1:8080").unwrap()
     .start();
