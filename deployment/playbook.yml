@@ -60,7 +60,7 @@
       remote_user: "{{ api_server_user }}"
       git:
         repo: https://github.com/divvun/divvun-api.git
-        version: develop
+        version: master
         dest: "/home/{{ api_server_user }}/divvun-api"
     - name: copy production env file
       remote_user: "{{ api_server_user }}"
