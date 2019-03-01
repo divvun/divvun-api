@@ -20,6 +20,17 @@
       remote_user: "{{ sudo_user }}"
       args:
         warn: no
+    - name: add apt key for nodesource
+      become: true
+      remote_user: "{{ sudo_user }}"
+      apt_key: 
+        url: https://deb.nodesource.com/gpgkey/nodesource.gpg.key
+    - name: add repo for nodesource
+      become: true
+      remote_user: "{{ sudo_user }}"
+      apt_repository:
+            repo: 'deb https://deb.nodesource.com/node_10.x {{ ansible_distribution_release }} main' 
+            update_cache: yes
     - name: install necessary apt packages
       become: true
       remote_user: "{{ sudo_user }}"
@@ -28,6 +39,7 @@
         name: "{{ packages }}"
       vars:
         packages:
+          - nodejs
           - curl
           - software-properties-common
           - build-essential
@@ -56,6 +68,13 @@
       remote_user: "{{ sudo_user }}"
       when: ansible_distribution == 'Ubuntu'
   tasks:
+    - name: clone msoffice addin repo
+      remote_user: "{{ sudo_user }}"
+      git:
+        repo: https://github.com/divvun/divvun-gramcheck-web.git
+        version: develop
+        dest: "/home/{{ sudo_user }}/grammcheck"
+        force: yes
     - name: clone divvun api repository
       remote_user: "{{ api_server_user }}"
       git:
@@ -67,7 +86,31 @@
       copy:
         src: "{{ env_file_path }}"
         dest: "/home/{{ api_server_user }}/divvun-api/.env"
-    - name: build the release version
+    - name: install msoffice addin dependencies
+      shell: npm install
+      args:
+        chdir: /home/{{ sudo_user }}/grammcheck/msoffice
+    - name: build msoffice addin
+      shell: npm run build
+      args:
+        chdir: /home/{{ sudo_user }}/grammcheck/msoffice
+    - name: delete old static hosting folder
+      become: true
+      remote_user: "{{ sudo_user }}"
+      file:
+        path: /var/www/html/msoffice
+        state: absent
+    - name: create static hosting folder
+      become: true
+      remote_user: "{{ sudo_user }}"
+      file:
+        path: /var/www/html/msoffice
+        state: directory
+    - name: copy msoffice addin files
+      become: true
+      remote_user: "{{ sudo_user }}"
+      shell: mv /home/{{ sudo_user }}/grammcheck/msoffice/dist/* /var/www/html/msoffice/
+    - name: build the release version of the api server
       remote_user: "{{ api_server_user }}"
       shell: /home/{{ api_server_user }}/.cargo/bin/cargo build --release
       args:
