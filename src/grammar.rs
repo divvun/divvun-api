@@ -47,7 +47,9 @@ impl Handler<GramcheckRequest> for GramcheckExecutor {
         let stdin = self.0.stdin.as_mut().expect("Failed to open stdin");
         let mut stdout = BufReader::new(self.0.stdout.as_mut().unwrap());
 
-        stdin.write_all(msg.text.as_bytes()).unwrap();
+        let cleaned_msg = msg.text.split("\n").next().unwrap();
+
+        stdin.write_all(cleaned_msg.as_bytes()).unwrap();
         stdin.write("\n".as_bytes()).unwrap();
 
         let mut line = String::new();
