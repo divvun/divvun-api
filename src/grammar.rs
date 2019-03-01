@@ -69,7 +69,8 @@ pub struct GramcheckErrResponse {
     end_index: u32,
     error_code: String,
     description: String,
-    suggestions: Vec<String>
+    suggestions: Vec<String>,
+    title: String,
 }
 
 #[derive(Deserialize, Serialize)]
