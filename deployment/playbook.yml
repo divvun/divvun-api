@@ -79,8 +79,9 @@
       remote_user: "{{ api_server_user }}"
       git:
         repo: https://github.com/divvun/divvun-api.git
-        version: master
+        version: develop
         dest: "/home/{{ api_server_user }}/divvun-api"
+        force: yes
     - name: copy production env file
       remote_user: "{{ api_server_user }}"
       copy:
