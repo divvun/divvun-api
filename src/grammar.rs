@@ -45,18 +45,20 @@ impl Handler<GramcheckRequest> for GramcheckExecutor {
 
     fn handle(&mut self, msg: GramcheckRequest, _: &mut Self::Context) -> Self::Result {
         let stdin = self.0.stdin.as_mut().expect("Failed to open stdin");
-        let mut stdout = BufReader::new(self.0.stdout.as_mut().unwrap());
+        let mut stdout = BufReader::new(self.0.stdout.as_mut().expect("stdout to not be dead"));
 
-        let cleaned_msg = msg.text.split("\n").next().unwrap();
+        let cleaned_msg = msg.text.split("\n").next().expect("string from newline split");
 
-        stdin.write_all(cleaned_msg.as_bytes()).unwrap();
-        stdin.write("\n".as_bytes()).unwrap();
+        stdin.write_all(cleaned_msg.as_bytes()).expect("write all");
+        stdin.write("\n".as_bytes()).expect("write nl");
 
         let mut line = String::new();
-        stdout.read_line(&mut line).unwrap();
+        stdout.read_line(&mut line).expect("read a line");
 
-        let result: GramcheckOutput = serde_json::from_str(&line).unwrap();
-        Ok(result)
+        match serde_json::from_str(&line) {
+            Ok(result) => return Ok(result),
+            Err(err) => return Err(ApiError { message: format!("error: {:?}, line: '{}'", &err, &line) })
+        };
     }
 }
 

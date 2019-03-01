@@ -3,6 +3,7 @@ use actix::prelude::*;
 use divvunspell::archive::{SpellerArchive};
 use failure::Fail;
 use hashbrown::HashMap;
+use serde_derive::Serialize;
 
 use std::env;
 use dotenv::dotenv;
@@ -19,10 +20,10 @@ use speller::{DivvunSpellExecutor, post_speller};
 use grammar::{GramcheckExecutor, post_gramcheck};
 use data_files::{get_data_files, DataFileType};
 
-#[derive(Fail, Debug)]
+#[derive(Fail, Debug, Serialize)]
 #[fail(display="api error")]
 pub struct ApiError {
-   pub message: &'static str
+   pub message: String
 }
 
 pub struct State {
