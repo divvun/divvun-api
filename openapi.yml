@@ -23,7 +23,10 @@ paths:
       summary: Returns spelling check results
       description: Returns spelling check results for the supplied text and language
       requestBody:
-        $ref: "#/components/schemas/SpellCheckRequest"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpellCheckRequest"
       responses:
         '200':
           description: List of spelling check results
@@ -49,7 +52,10 @@ paths:
       summary: Returns grammar check results
       description: Returns grammar check results for the supplied text and language
       requestBody:
-        $ref: "#/components/schemas/GrammarCheckRequest"
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrammarCheckRequest"
       responses:
         '200':
           description: List of grammar check results
@@ -59,6 +65,28 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/GrammarCheckResult"
+        default:
+          description: Error
+  /preferences/grammar/{languageCode}:
+    parameters:
+    - name: languageCode
+      in: path
+      required: true
+      example: se
+      description: The specified language
+      schema:
+        type: string
+    get:
+      operationId: getGrammarPreferences
+      summary: Returns grammar checker preferences
+      description: Returns available grammar checker preferences for the specified language code
+      responses:
+        '200':
+          description: A set of preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GrammarPreferencesResult"
         default:
           description: Error
 components:
@@ -77,6 +105,11 @@ components:
       properties:
         text:
           type: string
+        ignore_tags:
+          type: array
+          items: 
+            type: string
+            example: "msyn-compound"
     GrammarError:
       type: object
       required:
@@ -144,4 +177,11 @@ components:
             items:
               type: string
               example: oaidná
-
+      
+    GrammarPreferencesResult:
+      type: object
+      properties:
+        error_tags:
+          type: object
+          example: { "tag": "description" }
+ 
