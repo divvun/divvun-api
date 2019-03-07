@@ -1,12 +1,12 @@
-use directories::{ProjectDirs};
-use std::path::PathBuf;
-use std::io::{Error, ErrorKind};
+use directories::ProjectDirs;
 use std::fs;
+use std::io::{Error, ErrorKind};
+use std::path::PathBuf;
 
 #[derive(Clone, Copy)]
 pub enum DataFileType {
     Grammar,
-    Spelling
+    Spelling,
 }
 
 impl DataFileType {
@@ -37,7 +37,7 @@ pub fn get_data_files(data_type: DataFileType) -> std::io::Result<Vec<PathBuf>> 
         .filter(|path| !path.is_dir())
         .filter(|path| path.extension().unwrap_or_default() == extension)
         .collect();
-    
+
     Ok(paths)
 }
 
