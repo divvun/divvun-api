@@ -123,7 +123,7 @@ fn main() {
             .configure(|app| {
                 Cors::for_app(app)
                     .send_wildcard()
-                    .allowed_methods(vec!["POST"])
+                    .allowed_methods(vec!["POST", "GET"])
                     .allowed_headers(vec![header::ACCEPT])
                     .allowed_header(header::CONTENT_TYPE)
                     .max_age(3600)
