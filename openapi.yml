@@ -182,6 +182,7 @@ components:
       type: object
       properties:
         error_tags:
-          type: object
+          additionalProperties:
+            type: string
           example: { "tag": "description" }
  
