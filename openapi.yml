@@ -6,7 +6,7 @@ info:
     name: Brendan Molloy
     email: brendan@technocreatives.com
 servers:
-  - url: https://divvun-api.brendan.so/
+  - url: https://api-giellalt.uit.no/
     description: Staging server
 paths:
   /spelling/{languageCode}:
