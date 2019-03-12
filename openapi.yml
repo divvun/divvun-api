@@ -9,7 +9,7 @@ servers:
   - url: https://api-giellalt.uit.no
     description: Staging server
 paths:
-  /spelling/{languageCode}:
+  /speller/{languageCode}:
     parameters:
     - name: languageCode
       in: path
