@@ -8,6 +8,10 @@ info:
 servers:
   - url: https://api-giellalt.uit.no
     description: Staging server
+tags:
+  - name: General
+  - name: Grammar check
+  - name: Spellcheck
 paths:
   /speller/{languageCode}:
     parameters:
@@ -20,6 +24,8 @@ paths:
         type: string
     post:
       operationId: postSpellCheck
+      tags: 
+        - Spellcheck
       summary: Returns spelling check results
       description: Returns spelling check results for the supplied text and language
       requestBody:
@@ -47,6 +53,8 @@ paths:
         type: string
     post:
       operationId: postGrammarCheck
+      tags:
+        - Grammar check
       summary: Returns grammar check results
       description: Returns grammar check results for the supplied text and language
       requestBody:
@@ -76,6 +84,9 @@ paths:
         type: string
     get:
       operationId: getGrammarPreferences
+      tags:
+        - Grammar check
+        - General
       summary: Returns grammar checker preferences
       description: Returns available grammar checker preferences for the specified language code
       responses:
