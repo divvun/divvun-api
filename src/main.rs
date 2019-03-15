@@ -71,7 +71,7 @@ fn main() {
 
                 (
                     lang_code.into(),
-                    SyncArbiter::start(3, move || {
+                    SyncArbiter::start(1, move || {
                         let speller_path = f.to_str().unwrap();
                         let ar = SpellerArchive::new(speller_path);
                         DivvunSpellExecutor(ar.unwrap())
@@ -89,7 +89,7 @@ fn main() {
 
                 (
                     lang_code.into(),
-                    SyncArbiter::start(3, move || {
+                    SyncArbiter::start(1, move || {
                         let grammar_checker_path = f.to_str().unwrap();
                         GramcheckExecutor::new(grammar_checker_path).unwrap()
                     }),
@@ -139,6 +139,7 @@ fn main() {
                     .register()
             })
     })
+    .workers(4)
     .bind("127.0.0.1:8080")
     .unwrap()
     .start();
