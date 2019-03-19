@@ -18,7 +18,7 @@ mod data_files;
 mod grammar;
 mod speller;
 
-use data_files::{get_data_files, DataFileType};
+use data_files::{get_data_files, DataFileType, get_available_languages};
 use grammar::{get_gramcheck_preferences, list_preferences, post_gramcheck, GramcheckExecutor};
 use speller::{post_speller, DivvunSpellExecutor};
 use std::collections::BTreeMap;
@@ -135,6 +135,9 @@ fn main() {
                     })
                     .resource("/speller/{languageCode}", |r| {
                         r.method(Method::POST).with_async(post_speller);
+                    })
+                    .resource("/preferences/languages", |r| {
+                        r.method(Method::GET).f(get_available_languages);
                     })
                     .register()
             })

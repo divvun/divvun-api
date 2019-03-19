@@ -4,6 +4,9 @@ use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 use std::collections::HashMap;
 use csv;
+use serde_derive::{Serialize};
+use actix_web::{HttpRequest, Json};
+use crate::{State};
 
 #[derive(Clone, Copy)]
 pub enum DataFileType {
@@ -51,6 +54,20 @@ pub fn available_languages() -> HashMap<String, String> {
 
     result
 }
+
+#[derive(Serialize)]
+pub struct AvailableLanguagesResponse {
+    available: HashMap<String, String>,
+}
+
+pub fn get_available_languages(_req: &HttpRequest<State>) -> actix_web::Result<Json<AvailableLanguagesResponse>> {
+    let langs = available_languages();
+
+    Ok(Json(AvailableLanguagesResponse {
+        available: langs,
+    }))
+}
+
 pub fn get_data_files(data_type: DataFileType) -> std::io::Result<Vec<PathBuf>> {
     let dir = get_data_dir(data_type);
 
