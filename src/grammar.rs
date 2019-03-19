@@ -35,6 +35,9 @@ pub fn list_preferences(data_file_path: &str) -> Result<BTreeMap<String, String>
         .map(|l| l.unwrap())
         .skip_while(|l| l != "==== Toggles: ====")
         .skip(1)
+        // temporary solution
+        .skip_while(|l| l != "==== Toggles: ====")
+        .skip(1)
         .map(|l| {
             regex
                 .captures(&l)
