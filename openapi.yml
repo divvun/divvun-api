@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: "Divvun Grammar Checker Server API"
-  version: "0.1.0"
+  version: "0.2.0"
   contact:
     name: Brendan Molloy
     email: brendan@technocreatives.com

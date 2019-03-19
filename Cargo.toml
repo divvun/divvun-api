@@ -1,7 +1,11 @@
 [package]
 name = "divvun-api"
-version = "0.1.0"
-authors = ["Brendan Molloy <brendan@technocreatives.com>", "Rostislav Raykov <rostislav@technocreatives.com>"]
+version = "0.2.0"
+authors = [
+    "Brendan Molloy <brendan@technocreatives.com>", 
+    "Rostislav Raykov <rostislav@technocreatives.com>",
+    "Eike Siewertsen <eike@technocreatives.com>",
+]
 edition = "2018"
 
 [dependencies]
