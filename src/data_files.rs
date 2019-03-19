@@ -30,41 +30,62 @@ impl DataFileType {
     }
 }
 
-pub fn available_languages() -> HashMap<String, String> {
+pub fn available_languages(data_type: DataFileType) -> HashMap<String, String> {
     let autonyms_tsv = include_str!("../assets/iso639-autonyms.tsv");
     let mut reader = csv::ReaderBuilder::new()
         .delimiter(b'\t')
         .from_reader(autonyms_tsv.as_bytes());
 
-    let mut result = HashMap::new();
+    let lang_data_files = match get_data_files(data_type) {
+        Ok(v) => v,
+        Err(_) => Vec::new(),
+    };
 
-    for record in reader.records() {
-        if let Ok(record) = record {
-            let iso_639_1_code: String = match record.get(1) {
-                Some(v) => v.into(),
-                None => "".into()
-            };
-            let autonym: String = match record.get(3) {
-                Some(v) => v.into(),
-                None => "<missing name>".into(),
-            };
-            result.insert(iso_639_1_code, autonym);
-        }
-    }
+    let lang_keys: Vec<String> = lang_data_files
+        .iter()
+        .map(|p| p.file_stem()
+            .expect("Somehow this doesn't have a filestem")
+            .to_str()
+            .expect("Somehow this OsStr cannot be converted to str")
+            .to_owned()
+        )
+        .collect();
+
+    let all_langs: HashMap<String, String> = reader.records()
+        .filter_map(|r| r.ok())
+        .filter(|r| r.get(1).is_some())
+        .filter(|r| r.get(3).is_some())
+        .map(|r| (r.get(1).unwrap().to_owned(), r.get(3).unwrap().to_owned()))
+        .collect();
+
+    let result: HashMap<String, String> = lang_keys
+        .iter()
+        .map(|k| (k.clone(), all_langs[k].clone()))
+        .collect();
 
     result
 }
 
 #[derive(Serialize)]
+struct AvailableLanguagesByType {
+    grammar: HashMap<String, String>,
+    speller: HashMap<String, String>,
+}
+
+#[derive(Serialize)]
 pub struct AvailableLanguagesResponse {
-    available: HashMap<String, String>,
+    available: AvailableLanguagesByType,
 }
 
 pub fn get_available_languages(_req: &HttpRequest<State>) -> actix_web::Result<Json<AvailableLanguagesResponse>> {
-    let langs = available_languages();
+    let grammar_checker_langs = available_languages(DataFileType::Grammar);
+    let spell_checker_langs = available_languages(DataFileType::Spelling);
 
     Ok(Json(AvailableLanguagesResponse {
-        available: langs,
+        available: AvailableLanguagesByType {
+            grammar: grammar_checker_langs,
+            speller: spell_checker_langs,
+        }
     }))
 }
 
