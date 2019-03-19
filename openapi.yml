@@ -217,6 +217,14 @@ components:
       properties:
         available:
           type: object
-          additionalProperties:
-            type: string
-          example: { "se": "davvisámegiella", "bg": "български" }
+          properties:
+            grammar:
+              type: object
+              additionalProperties:
+                type: string
+              example: { "se": "davvisámegiella", "bg": "български" }
+            spelle:
+              type: object
+              additionalProperties:
+                type: string
+              example: { "se": "davvisámegiella" }
