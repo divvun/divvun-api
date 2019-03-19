@@ -1,12 +1,17 @@
-use directories::{ProjectDirs};
-use std::path::PathBuf;
-use std::io::{Error, ErrorKind};
+use directories::ProjectDirs;
 use std::fs;
+use std::io::{Error, ErrorKind};
+use std::path::PathBuf;
+use std::collections::HashMap;
+use csv;
+use serde_derive::{Serialize};
+use actix_web::{HttpRequest, Json};
+use crate::{State};
 
 #[derive(Clone, Copy)]
 pub enum DataFileType {
     Grammar,
-    Spelling
+    Spelling,
 }
 
 impl DataFileType {
@@ -25,6 +30,65 @@ impl DataFileType {
     }
 }
 
+pub fn available_languages(data_type: DataFileType) -> HashMap<String, String> {
+    let autonyms_tsv = include_str!("../assets/iso639-autonyms.tsv");
+    let mut reader = csv::ReaderBuilder::new()
+        .delimiter(b'\t')
+        .from_reader(autonyms_tsv.as_bytes());
+
+    let lang_data_files = match get_data_files(data_type) {
+        Ok(v) => v,
+        Err(_) => Vec::new(),
+    };
+
+    let lang_keys: Vec<String> = lang_data_files
+        .iter()
+        .map(|p| p.file_stem()
+            .expect("Somehow this doesn't have a filestem")
+            .to_str()
+            .expect("Somehow this OsStr cannot be converted to str")
+            .to_owned()
+        )
+        .collect();
+
+    let all_langs: HashMap<String, String> = reader.records()
+        .filter_map(|r| r.ok())
+        .filter(|r| r.get(1).is_some())
+        .filter(|r| r.get(3).is_some())
+        .map(|r| (r.get(1).unwrap().to_owned(), r.get(3).unwrap().to_owned()))
+        .collect();
+
+    let result: HashMap<String, String> = lang_keys
+        .iter()
+        .map(|k| (k.clone(), all_langs[k].clone()))
+        .collect();
+
+    result
+}
+
+#[derive(Serialize)]
+struct AvailableLanguagesByType {
+    grammar: HashMap<String, String>,
+    speller: HashMap<String, String>,
+}
+
+#[derive(Serialize)]
+pub struct AvailableLanguagesResponse {
+    available: AvailableLanguagesByType,
+}
+
+pub fn get_available_languages(_req: &HttpRequest<State>) -> actix_web::Result<Json<AvailableLanguagesResponse>> {
+    let grammar_checker_langs = available_languages(DataFileType::Grammar);
+    let spell_checker_langs = available_languages(DataFileType::Spelling);
+
+    Ok(Json(AvailableLanguagesResponse {
+        available: AvailableLanguagesByType {
+            grammar: grammar_checker_langs,
+            speller: spell_checker_langs,
+        }
+    }))
+}
+
 pub fn get_data_files(data_type: DataFileType) -> std::io::Result<Vec<PathBuf>> {
     let dir = get_data_dir(data_type);
 
@@ -37,7 +101,7 @@ pub fn get_data_files(data_type: DataFileType) -> std::io::Result<Vec<PathBuf>> 
         .filter(|path| !path.is_dir())
         .filter(|path| path.extension().unwrap_or_default() == extension)
         .collect();
-    
+
     Ok(paths)
 }
 

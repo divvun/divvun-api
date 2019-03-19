@@ -1,7 +1,11 @@
 [package]
 name = "divvun-api"
-version = "0.1.0"
-authors = ["Brendan Molloy <brendan@technocreatives.com>", "Rostislav Raykov <rostislav@technocreatives.com>"]
+version = "0.2.0"
+authors = [
+    "Brendan Molloy <brendan@technocreatives.com>", 
+    "Rostislav Raykov <rostislav@technocreatives.com>",
+    "Eike Siewertsen <eike@technocreatives.com>",
+]
 edition = "2018"
 
 [dependencies]
@@ -19,3 +23,5 @@ sentry-actix = "0.15.1"
 dotenv = "0.13.0"
 dotenv_codegen = "0.11.0"
 directories = "1.0"
+regex = "1"
+csv = "1.0.5"
