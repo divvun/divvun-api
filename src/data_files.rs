@@ -2,6 +2,8 @@ use directories::ProjectDirs;
 use std::fs;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
+use std::collections::HashMap;
+use csv;
 
 #[derive(Clone, Copy)]
 pub enum DataFileType {
@@ -25,6 +27,30 @@ impl DataFileType {
     }
 }
 
+pub fn available_languages() -> HashMap<String, String> {
+    let autonyms_tsv = include_str!("../assets/iso639-autonyms.tsv");
+    let mut reader = csv::ReaderBuilder::new()
+        .delimiter(b'\t')
+        .from_reader(autonyms_tsv.as_bytes());
+
+    let mut result = HashMap::new();
+
+    for record in reader.records() {
+        if let Ok(record) = record {
+            let iso_639_1_code: String = match record.get(1) {
+                Some(v) => v.into(),
+                None => "".into()
+            };
+            let autonym: String = match record.get(3) {
+                Some(v) => v.into(),
+                None => "<missing name>".into(),
+            };
+            result.insert(iso_639_1_code, autonym);
+        }
+    }
+
+    result
+}
 pub fn get_data_files(data_type: DataFileType) -> std::io::Result<Vec<PathBuf>> {
     let dir = get_data_dir(data_type);
 
