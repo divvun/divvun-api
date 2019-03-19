@@ -136,7 +136,7 @@ fn main() {
                     .resource("/speller/{languageCode}", |r| {
                         r.method(Method::POST).with_async(post_speller);
                     })
-                    .resource("/preferences/languages", |r| {
+                    .resource("/languages", |r| {
                         r.method(Method::GET).f(get_available_languages);
                     })
                     .register()
