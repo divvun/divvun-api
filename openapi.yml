@@ -98,6 +98,22 @@ paths:
                 $ref: "#/components/schemas/GrammarPreferencesResult"
         default:
           description: Error
+  /languages:
+    get:
+      operationId: getLanguageOptions
+      tags:
+        - General
+      summary: Returns options related to languages
+      description: Returns options related to languages, like what languages are available
+      responses:
+        '200':
+          description: A set of options
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LanguageOptionsResult"
+        default:
+          description: Error
 components:
   schemas:
     SpellCheckRequest:
@@ -195,3 +211,12 @@ components:
           additionalProperties:
             type: string
           example: { "tag": "description" }
+
+    LanguageOptionsResult:
+      type: object
+      properties:
+        available:
+          type: object
+          additionalProperties:
+            type: string
+          example: { "se": "davvisámegiella", "bg": "български" }
