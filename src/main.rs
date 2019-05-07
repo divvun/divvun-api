@@ -19,7 +19,7 @@ mod data_files;
 mod grammar;
 mod speller;
 
-use data_files::{get_data_files, DataFileType, get_available_languages};
+use data_files::{get_available_languages, get_data_files, DataFileType};
 use grammar::{get_gramcheck_preferences, list_preferences, post_gramcheck, GramcheckExecutor};
 use speller::{post_speller, DivvunSpellExecutor};
 use std::collections::BTreeMap;
@@ -44,10 +44,9 @@ impl actix_web::error::ResponseError for ApiError {}
 fn main() {
     let config_file = "config.toml";
 
-    let config = fs::read_to_string(config_file)
-        .expect(&format!("Failed to open {}", config_file));
-    let config: Config = toml::from_str(&config)
-        .expect(&format!("Failed to convert {} to TOML", config_file));
+    let config = fs::read_to_string(config_file).expect(&format!("Failed to open {}", config_file));
+    let config: Config =
+        toml::from_str(&config).expect(&format!("Failed to convert {} to TOML", config_file));
 
     let _guard = sentry::init(config.sentry_dsn);
     env::set_var("RUST_BACKTRACE", "1");

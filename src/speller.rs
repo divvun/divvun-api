@@ -1,7 +1,7 @@
-use actix_web::{HttpResponse, Json, Path, State, AsyncResponder};
-use futures::future::{Future, result};
 use actix::prelude::*;
-use divvunspell::archive::{SpellerArchive};
+use actix_web::{AsyncResponder, HttpResponse, Json, Path, State};
+use divvunspell::archive::SpellerArchive;
+use futures::future::{result, Future};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::{ApiError, State as AppState};
@@ -14,13 +14,13 @@ impl Actor for DivvunSpellExecutor {
 
 #[derive(Deserialize, Debug)]
 pub struct SpellerRequest {
-    pub word: String
+    pub word: String,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct SpellerResponse {
     pub word: String,
-    pub suggestions: Vec<String>
+    pub suggestions: Vec<String>,
 }
 
 impl Message for SpellerRequest {
@@ -31,16 +31,26 @@ impl Handler<SpellerRequest> for DivvunSpellExecutor {
     type Result = Result<SpellerResponse, ApiError>;
 
     fn handle(&mut self, msg: SpellerRequest, _: &mut Self::Context) -> Self::Result {
-        let suggestions = self.0.speller().suggest(&msg.word).into_iter().map(|m| m.value).collect();
+        let suggestions = self
+            .0
+            .speller()
+            .suggest(&msg.word)
+            .into_iter()
+            .map(|m| m.value)
+            .collect();
         Ok(SpellerResponse {
             word: msg.word,
-            suggestions
+            suggestions,
         })
     }
 }
 
 /// Async handler
-pub fn post_speller(body: Json<SpellerRequest>, language: Path<String>, state: State<AppState>) -> Box<Future<Item=HttpResponse, Error=actix_web::Error>> {
+pub fn post_speller(
+    body: Json<SpellerRequest>,
+    language: Path<String>,
+    state: State<AppState>,
+) -> Box<Future<Item = HttpResponse, Error = actix_web::Error>> {
     let speller = match state.spellers.get(&*language) {
         Some(s) => s,
         None => {
@@ -48,13 +58,12 @@ pub fn post_speller(body: Json<SpellerRequest>, language: Path<String>, state: S
         }
     };
 
-    speller.send(body.0)
+    speller
+        .send(body.0)
         .from_err()
-        .and_then(|res| {
-            match res {
-                Ok(result) => Ok(HttpResponse::Ok().json(result)),
-                Err(_) => Ok(HttpResponse::InternalServerError().into())
-            }
+        .and_then(|res| match res {
+            Ok(result) => Ok(HttpResponse::Ok().json(result)),
+            Err(_) => Ok(HttpResponse::InternalServerError().into()),
         })
         .responder()
 }
