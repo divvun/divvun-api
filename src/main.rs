@@ -7,13 +7,14 @@ use failure::Fail;
 use hashbrown::HashMap;
 use serde_derive::Serialize;
 
-use dotenv::dotenv;
-use dotenv_codegen::{dotenv, expand_dotenv};
 use std::env;
+
+use std::fs;
 
 use sentry;
 use sentry_actix::SentryMiddleware;
 
+mod config;
 mod data_files;
 mod grammar;
 mod speller;
@@ -22,6 +23,8 @@ use data_files::{get_data_files, DataFileType, get_available_languages};
 use grammar::{get_gramcheck_preferences, list_preferences, post_gramcheck, GramcheckExecutor};
 use speller::{post_speller, DivvunSpellExecutor};
 use std::collections::BTreeMap;
+
+use crate::config::Config;
 
 #[derive(Fail, Debug, Serialize)]
 #[fail(display = "api error")]
@@ -39,9 +42,14 @@ pub struct State {
 impl actix_web::error::ResponseError for ApiError {}
 
 fn main() {
-    dotenv().ok();
-    let sentry_dsn = dotenv!("SENTRY_DSN");
-    let _guard = sentry::init(sentry_dsn);
+    let config_file = "config.toml";
+
+    let config = fs::read_to_string(config_file)
+        .expect(&format!("Failed to open {}", config_file));
+    let config: Config = toml::from_str(&config)
+        .expect(&format!("Failed to convert {} to TOML", config_file));
+
+    let _guard = sentry::init(config.sentry_dsn);
     env::set_var("RUST_BACKTRACE", "1");
     sentry::integrations::panic::register_panic_handler();
 
@@ -143,10 +151,10 @@ fn main() {
             })
     })
     .workers(4)
-    .bind("127.0.0.1:8080")
+    .bind(&config.addr)
     .unwrap()
     .start();
 
-    println!("Started http server: 127.0.0.1:8080");
+    println!("Started http server: {}", &config.addr);
     let _ = sys.run();
 }
