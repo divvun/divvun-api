@@ -24,7 +24,7 @@ Inside the appropriate folder place `.zcheck` files into `grammar/` and `.zhfst`
 
 On the target server you need to have made sure the following things exist:
 
-- Created a regular user with sudo priviliges (default: *ubuntu*)
+- Created a regular user with sudo privileges (default: *ubuntu*)
 - Created an API user with which the API will run (default: *api*)
 - Have SSH access
 - The target machine has python installed (e.g. `apt-get install python`)
