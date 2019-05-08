@@ -4,7 +4,7 @@ use divvunspell::archive::SpellerArchive;
 use futures::future::{result, Future};
 use serde_derive::{Deserialize, Serialize};
 
-use crate::{ApiError, State as AppState};
+use crate::server::{ApiError, State as AppState};
 
 pub struct DivvunSpellExecutor(pub SpellerArchive);
 

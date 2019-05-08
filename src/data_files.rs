@@ -1,12 +1,14 @@
-use crate::State;
 use actix_web::{HttpRequest, Json};
 use csv;
 use directories::ProjectDirs;
 use serde_derive::Serialize;
+
 use std::collections::HashMap;
 use std::fs;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
+
+use crate::server::State;
 
 #[derive(Clone, Copy)]
 pub enum DataFileType {

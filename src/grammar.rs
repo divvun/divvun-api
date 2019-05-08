@@ -6,7 +6,7 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Write;
 
-use crate::{ApiError, State as AppState};
+use crate::server::{ApiError, State as AppState};
 use serde_derive::{Deserialize, Serialize};
 
 use std::process::{Child, Command, Stdio};
@@ -174,12 +174,11 @@ pub fn get_gramcheck_preferences(
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use serde_json::json;
 
     #[test]
     fn test_foo() {
-        let some_data =
+        let _some_data =
             json!({"errs":[["heno",0,4,"typo","Čállinmeattáhus",[]]],"text":"heno."});
     }
 }
