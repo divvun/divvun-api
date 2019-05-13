@@ -1,19 +1,15 @@
-use actix_web::{HttpResponse, web};
+use std::collections::BTreeMap;
+use std::process::{Child, Command, Stdio};
+use std::io::{Error, BufRead, BufReader, Write};
 
+use serde_derive::{Deserialize, Serialize};
+use regex::Regex;
+
+use actix_web::{HttpResponse, web};
 use actix::prelude::*;
 use futures::future::{result, Future};
-use std::io::BufRead;
-use std::io::BufReader;
-use std::io::Write;
 
 use crate::server::{ApiError, State as AppState};
-use serde_derive::{Deserialize, Serialize};
-
-use std::process::{Child, Command, Stdio};
-
-use regex::Regex;
-use std::collections::BTreeMap;
-use std::io::Error;
 
 pub fn list_preferences(data_file_path: &str) -> Result<BTreeMap<String, String>, Error> {
     let mut process = Command::new("divvun-checker")

@@ -1,12 +1,12 @@
-use actix_web::web;
-use csv;
-use directories::ProjectDirs;
-use serde_derive::Serialize;
-
 use std::collections::HashMap;
 use std::fs;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
+
+use actix_web::web;
+use csv;
+use directories::ProjectDirs;
+use serde_derive::Serialize;
 
 #[derive(Clone, Copy)]
 pub enum DataFileType {

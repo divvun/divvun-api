@@ -1,15 +1,14 @@
+use std::env;
+use std::collections::BTreeMap;
+
 use actix::prelude::*;
 use actix_web::{
     http::header, web, middleware, middleware::cors::Cors, HttpServer, App,
 };
-use sentry_actix::SentryMiddleware;
 
 use hashbrown::HashMap;
 use failure::Fail;
 use serde_derive::Serialize;
-
-use std::env;
-use std::collections::BTreeMap;
 
 use divvunspell::archive::SpellerArchive;
 
@@ -34,9 +33,7 @@ pub struct State {
 impl actix_web::error::ResponseError for ApiError {}
 
 pub fn start_server(config: &Config) {
-    let _guard = sentry::init(config.sentry_dsn.clone());
     env::set_var("RUST_BACKTRACE", "1");
-    sentry::integrations::panic::register_panic_handler();
 
     let sys = actix::System::new("divvun-api");
 
@@ -44,8 +41,6 @@ pub fn start_server(config: &Config) {
         App::new()
             .data(get_state())
             .wrap(middleware::Logger::default())
-            // FIXME: Sentry appears non-functional in actix-web 1.0
-            //.wrap(SentryMiddleware::builder().emit_header(true).finish())
             .wrap(Cors::new()
                 .send_wildcard()
                 .allowed_methods(vec!["POST", "GET"])

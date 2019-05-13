@@ -45,7 +45,6 @@ impl Handler<SpellerRequest> for DivvunSpellExecutor {
     }
 }
 
-/// Async handler
 pub fn post_speller(
     body: web::Json<SpellerRequest>,
     language: web::Path<String>,

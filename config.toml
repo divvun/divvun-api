@@ -1,2 +1,1 @@
-sentry_dsn = 'https://00000000000@sentry.io/000'
 addr = '127.0.0.1:8080'
