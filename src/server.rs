@@ -1,6 +1,6 @@
 use actix::prelude::*;
 use actix_web::{
-    http::header, http::Method, middleware, middleware::cors::Cors, server::HttpServer, App,
+    http::header, web, middleware, middleware::cors::Cors, HttpServer, App,
 };
 use sentry_actix::SentryMiddleware;
 
@@ -41,34 +41,28 @@ pub fn start_server(config: &Config) {
     let sys = actix::System::new("divvun-api");
 
     HttpServer::new(move || {
-        App::with_state(get_state())
-            .middleware(middleware::Logger::default())
-            .middleware(SentryMiddleware::builder().emit_header(true).finish())
-            .configure(|app| {
-                Cors::for_app(app)
-                    .send_wildcard()
-                    .allowed_methods(vec!["POST", "GET"])
-                    .allowed_headers(vec![header::ACCEPT])
-                    .allowed_header(header::CONTENT_TYPE)
-                    .max_age(3600)
-                    .resource("/graphiql", |r| {
-                        r.method(Method::GET).f(graphiql);
-                    })
-                    .resource("/grammar/{languageCode}", |r| {
-                        r.method(Method::POST).with_async(post_gramcheck);
-                    })
-                    .resource("/preferences/grammar/{languageCode}", |r| {
-                        r.method(Method::GET).with_async(get_gramcheck_preferences);
-                    })
-                    .resource("/speller/{languageCode}", |r| {
-                        r.method(Method::POST).with_async(post_speller);
-                    })
-                    .resource("/languages", |r| {
-                        r.method(Method::GET).f(get_available_languages);
-                    })
-                    .register()
-            })
-    })
+        App::new()
+            .data(get_state())
+            .wrap(middleware::Logger::default())
+            // FIXME: Sentry appears non-functional in actix-web 1.0
+            //.wrap(SentryMiddleware::builder().emit_header(true).finish())
+            .wrap(Cors::new()
+                .send_wildcard()
+                .allowed_methods(vec!["POST", "GET"])
+                .allowed_headers(vec![header::ACCEPT])
+                .allowed_header(header::CONTENT_TYPE)
+                .max_age(3600))
+            .service(web::resource("/graphiql")
+                .route(web::get().to(graphiql)))
+            .service(web::resource("/grammar/{languageCode}")
+                .route(web::post().to_async(post_gramcheck)))
+            .service(web::resource("/preferences/grammar/{languageCode}")
+                .route(web::get().to_async(get_gramcheck_preferences)))
+            .service(web::resource("/speller/{languageCode}")
+                .route(web::post().to_async(post_speller)))
+            .service(web::resource("/languages")
+                .route(web::get().to(get_available_languages)))
+        })
         .workers(4)
         .bind(&config.addr)
         .unwrap()

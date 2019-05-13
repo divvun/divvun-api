@@ -1,5 +1,5 @@
 use actix::prelude::*;
-use actix_web::{AsyncResponder, HttpResponse, Json, Path, State};
+use actix_web::{HttpResponse, web};
 use divvunspell::archive::SpellerArchive;
 use futures::future::{result, Future};
 use serde_derive::{Deserialize, Serialize};
@@ -47,23 +47,22 @@ impl Handler<SpellerRequest> for DivvunSpellExecutor {
 
 /// Async handler
 pub fn post_speller(
-    body: Json<SpellerRequest>,
-    language: Path<String>,
-    state: State<AppState>,
+    body: web::Json<SpellerRequest>,
+    language: web::Path<String>,
+    state: web::Data<AppState>,
 ) -> Box<Future<Item = HttpResponse, Error = actix_web::Error>> {
     let speller = match state.spellers.get(&*language) {
         Some(s) => s,
         None => {
-            return result(Ok(HttpResponse::InternalServerError().into())).responder();
+            return Box::new(result(Ok(HttpResponse::InternalServerError().into())));
         }
     };
 
-    speller
+    Box::new(speller
         .send(body.0)
         .from_err()
         .and_then(|res| match res {
             Ok(result) => Ok(HttpResponse::Ok().json(result)),
             Err(_) => Ok(HttpResponse::InternalServerError().into()),
-        })
-        .responder()
+        }))
 }

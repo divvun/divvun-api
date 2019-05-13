@@ -1,4 +1,4 @@
-use actix_web::{HttpRequest, Json};
+use actix_web::web;
 use csv;
 use directories::ProjectDirs;
 use serde_derive::Serialize;
@@ -7,8 +7,6 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
-
-use crate::server::State;
 
 #[derive(Clone, Copy)]
 pub enum DataFileType {
@@ -81,13 +79,11 @@ pub struct AvailableLanguagesResponse {
     available: AvailableLanguagesByType,
 }
 
-pub fn get_available_languages(
-    _req: &HttpRequest<State>,
-) -> actix_web::Result<Json<AvailableLanguagesResponse>> {
+pub fn get_available_languages() -> actix_web::Result<web::Json<AvailableLanguagesResponse>> {
     let grammar_checker_langs = available_languages(DataFileType::Grammar);
     let spell_checker_langs = available_languages(DataFileType::Spelling);
 
-    Ok(Json(AvailableLanguagesResponse {
+    Ok(web::Json(AvailableLanguagesResponse {
         available: AvailableLanguagesByType {
             grammar: grammar_checker_langs,
             speller: spell_checker_langs,

@@ -1,4 +1,4 @@
-use actix_web::{AsyncResponder, HttpResponse, Json, Path, State};
+use actix_web::{HttpResponse, web};
 
 use actix::prelude::*;
 use futures::future::{result, Future};
@@ -131,45 +131,41 @@ pub struct GramcheckOutput {
     errs: Vec<GramcheckErrResponse>,
 }
 
-/// Async handler
-// pub fn post_gramcheck((body, language, state): (Json<GramcheckRequest>, Path<String>, State<AppState>)) -> Box<Future<Item=HttpResponse, Error=actix_web::Error>> {
 pub fn post_gramcheck(
-    language: Path<String>,
-    state: State<AppState>,
-    body: Json<GramcheckRequest>,
+    language: web::Path<String>,
+    state: web::Data<AppState>,
+    body: web::Json<GramcheckRequest>,
 ) -> Box<Future<Item = HttpResponse, Error = actix_web::Error>> {
     let gramcheck = match state.gramcheckers.get(&*language) {
         Some(s) => s,
         None => {
-            return result(Ok(HttpResponse::InternalServerError().into())).responder();
+            return Box::new(result(Ok(HttpResponse::InternalServerError().into())));
         }
     };
 
-    gramcheck
+    Box::new(gramcheck
         .send(body.0)
         .from_err()
         .and_then(|res| match res {
             Ok(result) => Ok(HttpResponse::Ok().json(result)),
             Err(_) => Ok(HttpResponse::InternalServerError().into()),
-        })
-        .responder()
+        }))
 }
 
 pub fn get_gramcheck_preferences(
-    language: Path<String>,
-    state: State<AppState>,
-) -> Box<Future<Item = HttpResponse, Error = actix_web::Error>> {
+    language: web::Path<String>,
+    state: web::Data<AppState>,
+) -> impl Future<Item = HttpResponse, Error = actix_web::Error> {
     let error_tags = match state.gramcheck_preferences.get(&*language) {
         Some(s) => s,
         None => {
-            return result(Ok(HttpResponse::InternalServerError().into())).responder();
+            return result(Ok(HttpResponse::InternalServerError().into()));
         }
     };
 
     result(Ok(HttpResponse::Ok().json(GramcheckPreferencesResponse {
         error_tags: error_tags.to_owned(),
     })))
-    .responder()
 }
 
 #[cfg(test)]
