@@ -66,7 +66,7 @@ impl Actor for GramcheckExecutor {
     type Context = SyncContext<Self>;
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct GramcheckRequest {
     text: String,
 }
@@ -132,9 +132,12 @@ pub fn post_gramcheck(
     state: web::Data<AppState>,
     body: web::Json<GramcheckRequest>,
 ) -> Box<Future<Item = HttpResponse, Error = actix_web::Error>> {
+    println!("{:?}", &body.0);
+
     let gramcheck = match state.gramcheckers.get(&*language) {
         Some(s) => s,
         None => {
+            eprintln!("No gramchecker found");
             return Box::new(result(Ok(HttpResponse::InternalServerError().into())));
         }
     };
@@ -144,7 +147,10 @@ pub fn post_gramcheck(
         .from_err()
         .and_then(|res| match res {
             Ok(result) => Ok(HttpResponse::Ok().json(result)),
-            Err(_) => Ok(HttpResponse::InternalServerError().into()),
+            Err(e) => {
+                eprintln!("{:?}", e);
+                Ok(HttpResponse::InternalServerError().into())
+            },
         }))
 }
 

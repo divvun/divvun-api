@@ -108,7 +108,8 @@ fn get_state() -> State {
                 lang_code.into(),
                 SyncArbiter::start(1, move || {
                     let grammar_checker_path = f.to_str().unwrap();
-                    GramcheckExecutor::new(grammar_checker_path).unwrap()
+                    GramcheckExecutor::new(grammar_checker_path)
+                        .expect(&format!("not found: {}", grammar_checker_path))
                 }),
             )
         })
