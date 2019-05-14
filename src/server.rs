@@ -1,5 +1,6 @@
 use std::env;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use actix::prelude::*;
 use actix_web::{
@@ -16,7 +17,8 @@ use crate::grammar::{get_gramcheck_preferences, list_preferences, post_gramcheck
 use crate::config::Config;
 use crate::speller::{post_speller, DivvunSpellExecutor};
 use crate::data_files::{get_available_languages, get_data_files, DataFileType};
-use crate::query::graphiql;
+use crate::graphql::handlers::{graphiql, graphql};
+use crate::graphql::schema::{Schema, create_schema};
 
 #[derive(Fail, Debug, Serialize)]
 #[fail(display = "api error")]
@@ -25,6 +27,7 @@ pub struct ApiError {
 }
 
 pub struct State {
+    pub graphql_schema: Arc<Schema>,
     pub spellers: HashMap<String, Addr<DivvunSpellExecutor>>,
     pub gramcheckers: HashMap<String, Addr<GramcheckExecutor>>,
     pub gramcheck_preferences: HashMap<String, BTreeMap<String, String>>,
@@ -49,6 +52,8 @@ pub fn start_server(config: &Config) {
                 .max_age(3600))
             .service(web::resource("/graphiql")
                 .route(web::get().to(graphiql)))
+            .service(web::resource("/graphql")
+                .route(web::post().to_async(graphql)))
             .service(web::resource("/grammar/{languageCode}")
                 .route(web::post().to_async(post_gramcheck)))
             .service(web::resource("/preferences/grammar/{languageCode}")
@@ -129,6 +134,7 @@ fn get_state() -> State {
         .collect();
 
     State {
+        graphql_schema: Arc::new(create_schema()),
         spellers,
         gramcheckers,
         gramcheck_preferences,
