@@ -2,14 +2,16 @@ use std::collections::BTreeMap;
 use std::process::{Child, Command, Stdio};
 use std::io::{Error, BufRead, BufReader, Write};
 
+use hashbrown::HashMap;
 use serde_derive::{Deserialize, Serialize};
 use regex::Regex;
 
 use actix_web::{HttpResponse, web};
 use actix::prelude::*;
-use futures::future::{result, Future};
+use futures::future::{result, err, Future};
 
-use crate::server::{ApiError, State as AppState};
+use crate::server::{ApiError as OldApiError, State as AppState};
+use crate::state::{GrammarSuggestions, ApiError, State};
 
 pub fn list_preferences(data_file_path: &str) -> Result<BTreeMap<String, String>, Error> {
     let mut process = Command::new("divvun-checker")
@@ -127,33 +129,6 @@ pub struct GramcheckOutput {
     errs: Vec<GramcheckErrResponse>,
 }
 
-pub fn post_gramcheck(
-    language: web::Path<String>,
-    state: web::Data<AppState>,
-    body: web::Json<GramcheckRequest>,
-) -> Box<Future<Item = HttpResponse, Error = actix_web::Error>> {
-    println!("{:?}", &body.0);
-
-    let gramcheck = match state.gramcheckers.get(&*language) {
-        Some(s) => s,
-        None => {
-            eprintln!("No gramchecker found");
-            return Box::new(result(Ok(HttpResponse::InternalServerError().into())));
-        }
-    };
-
-    Box::new(gramcheck
-        .send(body.0)
-        .from_err()
-        .and_then(|res| match res {
-            Ok(result) => Ok(HttpResponse::Ok().json(result)),
-            Err(e) => {
-                eprintln!("{:?}", e);
-                Ok(HttpResponse::InternalServerError().into())
-            },
-        }))
-}
-
 pub fn get_gramcheck_preferences(
     language: web::Path<String>,
     state: web::Data<AppState>,
@@ -168,6 +143,48 @@ pub fn get_gramcheck_preferences(
     result(Ok(HttpResponse::Ok().json(GramcheckPreferencesResponse {
         error_tags: error_tags.to_owned(),
     })))
+}
+
+pub struct AsyncGramchecker {
+    pub gramcheckers: HashMap<String, Addr<GramcheckExecutor>>,
+}
+
+impl GrammarSuggestions for AsyncGramchecker {
+    fn grammar_suggestions(&self, message: GramcheckRequest, language: &str)
+-> Box<Future<Item=Result<GramcheckOutput, ApiError>, Error=ApiError>> {
+
+        let gramchecker = match self.gramcheckers.get(language) {
+            Some(s) => s,
+            None => {
+                return Box::new(err(ApiError {
+                    message: "No grammar checker available for that language".to_owned()
+                }));
+            }
+        };
+
+        Box::new(
+            gramchecker
+                .send(message)
+                .map_err(|err|
+                    ApiError { message: format!("Something failed in the message delivery process: {}", err) }
+        ))
+    }
+}
+
+pub fn gramchecker_handler(
+    body: web::Json<GramcheckRequest>,
+    path: web::Path<String>,
+    state: web::Data<State>)
+-> impl Future<Item=HttpResponse, Error=actix_web::Error> {
+
+    let grammar_suggestions = &state.language_functions.grammar_suggesgions;
+
+    grammar_suggestions.grammar_suggestions(body.0, &path)
+        .from_err()
+        .and_then(|res| match res {
+            Ok(result) => Ok(HttpResponse::Ok().json(result)),
+            Err(_) => Ok(HttpResponse::InternalServerError().into()),
+        })
 }
 
 #[cfg(test)]

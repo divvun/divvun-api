@@ -67,7 +67,7 @@ impl SpellingSuggestions for AsyncSpeller {
             speller
                 .send(message)
                 .map_err(|err|
-            ApiError { message: format!("Something failed in the message delivery process: {}", err) }
+                    ApiError { message: format!("Something failed in the message delivery process: {}", err) }
         ))
     }
 }
