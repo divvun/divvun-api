@@ -5,6 +5,7 @@ mod data_files;
 mod grammar;
 mod speller;
 mod server;
+mod state;
 mod graphql;
 
 use config::Config;

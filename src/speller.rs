@@ -1,10 +1,11 @@
+use hashbrown::HashMap;
 use actix::prelude::*;
 use actix_web::{HttpResponse, web};
 use divvunspell::archive::SpellerArchive;
-use futures::future::{result, Future};
+use futures::future::{err, Future};
 use serde_derive::{Deserialize, Serialize};
 
-use crate::server::{ApiError, State as AppState};
+use crate::state::{SpellingSuggestions, State, ApiError};
 
 pub struct DivvunSpellExecutor(pub SpellerArchive);
 
@@ -45,23 +46,44 @@ impl Handler<SpellerRequest> for DivvunSpellExecutor {
     }
 }
 
-pub fn post_speller(
-    body: web::Json<SpellerRequest>,
-    language: web::Path<String>,
-    state: web::Data<AppState>,
-) -> Box<Future<Item = HttpResponse, Error = actix_web::Error>> {
-    let speller = match state.spellers.get(&*language) {
-        Some(s) => s,
-        None => {
-            return Box::new(result(Ok(HttpResponse::InternalServerError().into())));
-        }
-    };
+pub struct AsyncSpeller {
+    pub spellers: HashMap<String, Addr<DivvunSpellExecutor>>,
+}
 
-    Box::new(speller
-        .send(body.0)
+impl SpellingSuggestions for AsyncSpeller {
+    fn spelling_suggestions(&self, message: SpellerRequest, language: &str)
+        -> Box<Future<Item=Result<SpellerResponse, ApiError>, Error=ApiError>> {
+
+        let speller = match self.spellers.get(language) {
+            Some(s) => s,
+            None => {
+                return Box::new(err(ApiError {
+                    message: "No speller for that language".to_owned()
+                }));
+            }
+        };
+
+        Box::new(
+            speller
+                .send(message)
+                .map_err(|err|
+            ApiError { message: format!("Something failed in the message delivery process: {}", err) }
+        ))
+    }
+}
+
+pub fn speller_handler(
+    body: web::Json<SpellerRequest>,
+    path: web::Path<String>,
+    state: web::Data<State>)
+-> impl Future<Item = HttpResponse, Error = actix_web::Error> {
+
+    let spelling_suggestions = &state.language_functions.spelling_suggestions;
+
+    spelling_suggestions.spelling_suggestions(body.0, &path)
         .from_err()
         .and_then(|res| match res {
             Ok(result) => Ok(HttpResponse::Ok().json(result)),
             Err(_) => Ok(HttpResponse::InternalServerError().into()),
-        }))
+    })
 }

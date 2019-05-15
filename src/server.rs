@@ -15,10 +15,11 @@ use divvunspell::archive::SpellerArchive;
 
 use crate::grammar::{get_gramcheck_preferences, list_preferences, post_gramcheck, GramcheckExecutor};
 use crate::config::Config;
-use crate::speller::{post_speller, DivvunSpellExecutor};
+use crate::speller::{speller_handler, DivvunSpellExecutor};
 use crate::data_files::{get_available_languages, get_data_files, DataFileType};
 use crate::graphql::handlers::{graphiql, graphql};
 use crate::graphql::schema::{Schema, create_schema};
+use crate::state::{create_state};
 
 #[derive(Fail, Debug, Serialize)]
 #[fail(display = "api error")]
@@ -42,7 +43,7 @@ pub fn start_server(config: &Config) {
 
     HttpServer::new(move || {
         App::new()
-            .data(get_state())
+            .data(create_state())
             .wrap(middleware::Logger::default())
             .wrap(Cors::new()
                 .send_wildcard()
@@ -54,14 +55,17 @@ pub fn start_server(config: &Config) {
                 .route(web::get().to(graphiql)))
             .service(web::resource("/graphql")
                 .route(web::post().to_async(graphql)))
+            .service(web::resource("/speller/{languageCode}")
+                .route(web::post().to_async(speller_handler)))
+            /*
             .service(web::resource("/grammar/{languageCode}")
                 .route(web::post().to_async(post_gramcheck)))
             .service(web::resource("/preferences/grammar/{languageCode}")
                 .route(web::get().to_async(get_gramcheck_preferences)))
-            .service(web::resource("/speller/{languageCode}")
-                .route(web::post().to_async(post_speller)))
+
             .service(web::resource("/languages")
                 .route(web::get().to(get_available_languages)))
+                */
         })
         .workers(4)
         .bind(&config.addr)
