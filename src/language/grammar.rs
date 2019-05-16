@@ -6,11 +6,10 @@ use hashbrown::HashMap;
 use serde_derive::{Deserialize, Serialize};
 use regex::Regex;
 
-use actix_web::{HttpResponse, web};
 use actix::prelude::*;
-use futures::future::{result, err, Future};
+use futures::future::{err, Future};
 
-use crate::state::{GrammarSuggestions, ApiError, State};
+use crate::server::state::{GrammarSuggestions, ApiError};
 
 pub struct GramcheckExecutor(pub Child);
 
@@ -72,7 +71,7 @@ impl Handler<GramcheckRequest> for GramcheckExecutor {
 
 #[derive(Deserialize, Serialize)]
 pub struct GramcheckPreferencesResponse {
-    error_tags: BTreeMap<String, String>,
+    pub error_tags: BTreeMap<String, String>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -151,38 +150,6 @@ pub fn list_preferences(data_file_path: &str) -> Result<BTreeMap<String, String>
         .collect();
 
     Ok(categories)
-}
-
-pub fn get_gramcheck_preferences_handler(
-    language: web::Path<String>,
-    state: web::Data<State>,
-) -> impl Future<Item = HttpResponse, Error = actix_web::Error> {
-    let error_tags = match state.gramcheck_preferences.get(&*language) {
-        Some(s) => s,
-        None => {
-            return result(Ok(HttpResponse::InternalServerError().into()));
-        }
-    };
-
-    result(Ok(HttpResponse::Ok().json(GramcheckPreferencesResponse {
-        error_tags: error_tags.to_owned(),
-    })))
-}
-
-pub fn gramchecker_handler(
-    body: web::Json<GramcheckRequest>,
-    path: web::Path<String>,
-    state: web::Data<State>)
--> impl Future<Item=HttpResponse, Error=actix_web::Error> {
-
-    let grammar_suggestions = &state.language_functions.grammar_suggesgions;
-
-    grammar_suggestions.grammar_suggestions(body.0, &path)
-        .from_err()
-        .and_then(|res| match res {
-            Ok(result) => Ok(HttpResponse::Ok().json(result)),
-            Err(_) => Ok(HttpResponse::InternalServerError().into()),
-        })
 }
 
 #[cfg(test)]

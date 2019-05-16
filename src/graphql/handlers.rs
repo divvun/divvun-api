@@ -3,7 +3,7 @@ use juniper::http::graphiql::graphiql_source;
 use juniper::http::GraphQLRequest;
 use futures::future::Future;
 
-use crate::state::State;
+use crate::server::state::State;
 
 pub fn graphiql(req: HttpRequest) -> HttpResponse {
 

@@ -10,10 +10,10 @@ use actix_web::error::ResponseError;
 use divvunspell::archive::SpellerArchive;
 
 use crate::graphql::schema::Schema;
-use crate::speller::{AsyncSpeller, SpellerResponse, SpellerRequest, DivvunSpellExecutor};
-use crate::grammar::{AsyncGramchecker, GramcheckOutput, GramcheckRequest, GramcheckExecutor, list_preferences};
 use crate::graphql::schema::create_schema;
-use crate::data_files::{get_data_files, DataFileType};
+use crate::language::speller::{AsyncSpeller, SpellerResponse, SpellerRequest, DivvunSpellExecutor};
+use crate::language::grammar::{AsyncGramchecker, GramcheckOutput, GramcheckRequest, GramcheckExecutor, list_preferences};
+use crate::language::data_files::{get_data_files, DataFileType};
 use std::path::PathBuf;
 
 #[derive(Fail, Debug, Serialize)]

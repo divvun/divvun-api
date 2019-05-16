@@ -3,7 +3,6 @@ use std::fs;
 use std::io::{Error, ErrorKind};
 use std::path::PathBuf;
 
-use actix_web::web;
 use csv;
 use directories::ProjectDirs;
 use serde_derive::Serialize;
@@ -15,14 +14,14 @@ pub enum DataFileType {
 }
 
 #[derive(Serialize)]
-struct AvailableLanguagesByType {
-    grammar: HashMap<String, String>,
-    speller: HashMap<String, String>,
+pub struct AvailableLanguagesByType {
+    pub grammar: HashMap<String, String>,
+    pub speller: HashMap<String, String>,
 }
 
 #[derive(Serialize)]
 pub struct AvailableLanguagesResponse {
-    available: AvailableLanguagesByType,
+    pub available: AvailableLanguagesByType,
 }
 
 impl DataFileType {
@@ -42,7 +41,7 @@ impl DataFileType {
 }
 
 pub fn available_languages(data_type: DataFileType) -> HashMap<String, String> {
-    let autonyms_tsv = include_str!("../assets/iso639-autonyms.tsv");
+    let autonyms_tsv = include_str!("../../assets/iso639-autonyms.tsv");
     let mut reader = csv::ReaderBuilder::new()
         .delimiter(b'\t')
         .from_reader(autonyms_tsv.as_bytes());
@@ -77,18 +76,6 @@ pub fn available_languages(data_type: DataFileType) -> HashMap<String, String> {
         .collect();
 
     result
-}
-
-pub fn get_available_languages_handler() -> actix_web::Result<web::Json<AvailableLanguagesResponse>> {
-    let grammar_checker_langs = available_languages(DataFileType::Grammar);
-    let spell_checker_langs = available_languages(DataFileType::Spelling);
-
-    Ok(web::Json(AvailableLanguagesResponse {
-        available: AvailableLanguagesByType {
-            grammar: grammar_checker_langs,
-            speller: spell_checker_langs,
-        },
-    }))
 }
 
 pub fn get_data_files(data_type: DataFileType) -> std::io::Result<Vec<PathBuf>> {

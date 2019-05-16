@@ -4,12 +4,18 @@ use actix_web::{
     http::header, web, middleware, middleware::cors::Cors, HttpServer, App,
 };
 
-use crate::grammar::{gramchecker_handler, get_gramcheck_preferences_handler};
+pub mod state;
+
 use crate::config::Config;
-use crate::speller::speller_handler;
-use crate::data_files::{get_available_languages_handler};
 use crate::graphql::handlers::{graphiql, graphql};
-use crate::state::{create_state};
+use self::state::create_state;
+
+use crate::language::handlers::{
+    get_available_languages_handler,
+    gramchecker_handler,
+    get_gramcheck_preferences_handler,
+    speller_handler
+};
 
 pub fn start_server(config: &Config) {
     env::set_var("RUST_BACKTRACE", "1");
@@ -38,7 +44,7 @@ pub fn start_server(config: &Config) {
                 .route(web::get().to_async(get_gramcheck_preferences_handler)))
             .service(web::resource("/languages")
                 .route(web::get().to(get_available_languages_handler)))
-        })
+    })
         .workers(4)
         .bind(&config.addr)
         .unwrap()

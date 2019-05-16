@@ -1,11 +1,8 @@
 use std::fs;
 
 mod config;
-mod data_files;
-mod grammar;
-mod speller;
+mod language;
 mod server;
-mod state;
 mod graphql;
 
 use config::Config;

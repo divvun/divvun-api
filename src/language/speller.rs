@@ -1,11 +1,10 @@
 use hashbrown::HashMap;
 use actix::prelude::*;
-use actix_web::{HttpResponse, web};
 use divvunspell::archive::SpellerArchive;
 use futures::future::{err, Future};
 use serde_derive::{Deserialize, Serialize};
 
-use crate::state::{SpellingSuggestions, State, ApiError};
+use crate::server::state::{SpellingSuggestions, ApiError};
 
 pub struct DivvunSpellExecutor(pub SpellerArchive);
 
@@ -70,20 +69,4 @@ impl SpellingSuggestions for AsyncSpeller {
                     ApiError { message: format!("Something failed in the message delivery process: {}", err) }
         ))
     }
-}
-
-pub fn speller_handler(
-    body: web::Json<SpellerRequest>,
-    path: web::Path<String>,
-    state: web::Data<State>)
--> impl Future<Item = HttpResponse, Error = actix_web::Error> {
-
-    let spelling_suggestions = &state.language_functions.spelling_suggestions;
-
-    spelling_suggestions.spelling_suggestions(body.0, &path)
-        .from_err()
-        .and_then(|res| match res {
-            Ok(result) => Ok(HttpResponse::Ok().json(result)),
-            Err(_) => Ok(HttpResponse::InternalServerError().into()),
-    })
 }
