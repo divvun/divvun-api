@@ -14,6 +14,17 @@ pub enum DataFileType {
     Spelling,
 }
 
+#[derive(Serialize)]
+struct AvailableLanguagesByType {
+    grammar: HashMap<String, String>,
+    speller: HashMap<String, String>,
+}
+
+#[derive(Serialize)]
+pub struct AvailableLanguagesResponse {
+    available: AvailableLanguagesByType,
+}
+
 impl DataFileType {
     pub fn as_ext(&self) -> &str {
         match self {
@@ -68,18 +79,7 @@ pub fn available_languages(data_type: DataFileType) -> HashMap<String, String> {
     result
 }
 
-#[derive(Serialize)]
-struct AvailableLanguagesByType {
-    grammar: HashMap<String, String>,
-    speller: HashMap<String, String>,
-}
-
-#[derive(Serialize)]
-pub struct AvailableLanguagesResponse {
-    available: AvailableLanguagesByType,
-}
-
-pub fn get_available_languages() -> actix_web::Result<web::Json<AvailableLanguagesResponse>> {
+pub fn get_available_languages_handler() -> actix_web::Result<web::Json<AvailableLanguagesResponse>> {
     let grammar_checker_langs = available_languages(DataFileType::Grammar);
     let spell_checker_langs = available_languages(DataFileType::Spelling);
 

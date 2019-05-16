@@ -3,7 +3,7 @@ use juniper::http::graphiql::graphiql_source;
 use juniper::http::GraphQLRequest;
 use futures::future::Future;
 
-use crate::server::State;
+use crate::state::State;
 
 pub fn graphiql(req: HttpRequest) -> HttpResponse {
 
@@ -14,12 +14,13 @@ pub fn graphiql(req: HttpRequest) -> HttpResponse {
 }
 
 pub fn graphql(
-    data: web::Data<State>,
+    state: web::Data<State>,
     request: web::Json<GraphQLRequest>
 ) -> impl Future<Item=HttpResponse, Error=actix_web::Error> {
 
+    let schema = state.graphql_schema.clone();
     web::block(move || {
-        let res = request.execute(&data.graphql_schema, &());
+        let res = request.execute(&schema, &());
         Ok::<_, serde_json::error::Error>(serde_json::to_string(&res)?)
     })
     .map_err(actix_web::Error::from)

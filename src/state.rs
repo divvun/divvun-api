@@ -1,5 +1,7 @@
 use std::sync::Arc;
+use std::collections::BTreeMap;
 
+use hashbrown::HashMap;
 use failure::Fail;
 use serde_derive::Serialize;
 use futures::future::Future;
@@ -9,9 +11,10 @@ use divvunspell::archive::SpellerArchive;
 
 use crate::graphql::schema::Schema;
 use crate::speller::{AsyncSpeller, SpellerResponse, SpellerRequest, DivvunSpellExecutor};
-use crate::grammar::{AsyncGramchecker, GramcheckOutput, GramcheckRequest, GramcheckExecutor};
+use crate::grammar::{AsyncGramchecker, GramcheckOutput, GramcheckRequest, GramcheckExecutor, list_preferences};
 use crate::graphql::schema::create_schema;
-use crate::data_files::{get_available_languages, get_data_files, DataFileType};
+use crate::data_files::{get_data_files, DataFileType};
+use std::path::PathBuf;
 
 #[derive(Fail, Debug, Serialize)]
 #[fail(display = "api error")]
@@ -28,7 +31,7 @@ pub struct LanguageFunctions {
 
 pub trait SpellingSuggestions {
     fn spelling_suggestions(&self, message: SpellerRequest, language: &str)
-        -> Box<Future<Item = Result<SpellerResponse, ApiError>, Error = ApiError>>;
+        -> Box<Future<Item=Result<SpellerResponse, ApiError>, Error=ApiError>>;
 }
 
 pub trait GrammarSuggestions {
@@ -39,15 +42,23 @@ pub trait GrammarSuggestions {
 pub struct State {
     pub graphql_schema: Arc<Schema>,
     pub language_functions: LanguageFunctions,
+    pub gramcheck_preferences: HashMap<String, BTreeMap<String, String>>,
 }
 
 pub fn create_state() -> State {
+    let grammar_data_files = get_data_files(DataFileType::Grammar)
+        .unwrap_or_else(|e| {
+            eprintln!("Error getting grammar data files: {}", e);
+            vec![]
+    });
+
     State {
-        graphql_schema: Arc::new(create_schema()),
+        graphql_schema: Arc::new(create_schema()).clone(),
         language_functions: LanguageFunctions {
             spelling_suggestions: Box::new(get_speller()),
-            grammar_suggesgions: Box::new(get_gramchecker()),
-        }
+            grammar_suggesgions: Box::new(get_gramchecker(&grammar_data_files)),
+        },
+        gramcheck_preferences: get_gramcheck_preferences(&grammar_data_files),
     }
 }
 
@@ -80,11 +91,7 @@ fn get_speller() -> AsyncSpeller {
     AsyncSpeller { spellers }
 }
 
-fn get_gramchecker() -> AsyncGramchecker {
-    let grammar_data_files = get_data_files(DataFileType::Grammar).unwrap_or_else(|e| {
-        eprintln!("Error getting grammar data files: {}", e);
-        vec![]
-    });
+fn get_gramchecker(grammar_data_files: &Vec<PathBuf>) -> AsyncGramchecker {
 
     let gramcheckers = grammar_data_files
         .to_owned()
@@ -104,4 +111,21 @@ fn get_gramchecker() -> AsyncGramchecker {
         .collect();
 
     AsyncGramchecker { gramcheckers }
+}
+
+fn get_gramcheck_preferences(grammar_data_files: &Vec<PathBuf>) -> HashMap<String, BTreeMap<String, String>> {
+
+    let gramcheck_preferences = grammar_data_files
+        .into_iter()
+        .map(|f| {
+            let grammar_checker_path = f.to_str().unwrap();
+            let lang_code = f.file_stem().unwrap().to_str().unwrap();
+            (
+                lang_code.into(),
+                list_preferences(grammar_checker_path).unwrap(),
+            )
+        })
+        .collect();
+
+    gramcheck_preferences
 }
