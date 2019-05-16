@@ -48,7 +48,7 @@ pub fn gramchecker_handler(
 
     let grammar_suggestions = &state.language_functions.grammar_suggesgions;
 
-    grammar_suggestions.grammar_suggestions(body.0, &path)
+    grammar_suggestions.grammar_suggestions(        body.0, &path)
         .from_err()
         .and_then(|res| match res {
             Ok(result) => Ok(HttpResponse::Ok().json(result)),
@@ -61,6 +61,7 @@ pub fn speller_handler(
     path: web::Path<String>,
     state: web::Data<State>)
     -> impl Future<Item=HttpResponse, Error=actix_web::Error> {
+
     let spelling_suggestions = &state.language_functions.spelling_suggestions;
 
     spelling_suggestions.spelling_suggestions(body.0, &path)

@@ -18,9 +18,8 @@ pub fn graphql(
     request: web::Json<GraphQLRequest>
 ) -> impl Future<Item=HttpResponse, Error=actix_web::Error> {
 
-    let schema = state.graphql_schema.clone();
     web::block(move || {
-        let res = request.execute(&schema, &());
+        let res = request.execute(&state.graphql_schema, &state);
         Ok::<_, serde_json::error::Error>(serde_json::to_string(&res)?)
     })
     .map_err(actix_web::Error::from)

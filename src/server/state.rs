@@ -29,12 +29,12 @@ pub struct LanguageFunctions {
     pub grammar_suggesgions: Box<GrammarSuggestions>,
 }
 
-pub trait SpellingSuggestions {
+pub trait SpellingSuggestions: Send + Sync {
     fn spelling_suggestions(&self, message: SpellerRequest, language: &str)
         -> Box<Future<Item=Result<SpellerResponse, ApiError>, Error=ApiError>>;
 }
 
-pub trait GrammarSuggestions {
+pub trait GrammarSuggestions: Send + Sync {
     fn grammar_suggestions(&self, message: GramcheckRequest, language: &str)
         -> Box<Future<Item=Result<GramcheckOutput, ApiError>, Error=ApiError>>;
 }
