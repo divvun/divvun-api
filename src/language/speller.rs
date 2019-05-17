@@ -4,7 +4,7 @@ use divvunspell::archive::SpellerArchive;
 use futures::future::{err, Future};
 use serde_derive::{Deserialize, Serialize};
 
-use crate::server::state::{SpellingSuggestions, ApiError};
+use crate::server::state::{SpellingSuggestions, ApiError, UnhoistFutureExt};
 
 pub struct DivvunSpellExecutor(pub SpellerArchive);
 
@@ -51,7 +51,7 @@ pub struct AsyncSpeller {
 
 impl SpellingSuggestions for AsyncSpeller {
     fn spelling_suggestions(&self, message: SpellerRequest, language: &str)
-        -> Box<Future<Item=Result<SpellerResponse, ApiError>, Error=ApiError>> {
+-> Box<Future<Item=SpellerResponse, Error=ApiError>> {
 
         let speller = match self.spellers.get(language) {
             Some(s) => s,
@@ -67,6 +67,7 @@ impl SpellingSuggestions for AsyncSpeller {
                 .send(message)
                 .map_err(|err|
                     ApiError { message: format!("Something failed in the message delivery process: {}", err) }
-        ))
+                ).unhoist()
+        )
     }
 }

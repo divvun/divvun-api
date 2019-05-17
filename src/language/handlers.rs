@@ -48,12 +48,9 @@ pub fn gramchecker_handler(
 
     let grammar_suggestions = &state.language_functions.grammar_suggestions;
 
-    grammar_suggestions.grammar_suggestions(        body.0, &path)
+    grammar_suggestions.grammar_suggestions(body.0, &path)
         .from_err()
-        .and_then(|res| match res {
-            Ok(result) => Ok(HttpResponse::Ok().json(result)),
-            Err(_) => Ok(HttpResponse::InternalServerError().into()),
-        })
+        .map(|res| HttpResponse::Ok().json(res))
 }
 
 pub fn speller_handler(
@@ -66,8 +63,5 @@ pub fn speller_handler(
 
     spelling_suggestions.spelling_suggestions(body.0, &path)
         .from_err()
-        .and_then(|res| match res {
-            Ok(result) => Ok(HttpResponse::Ok().json(result)),
-            Err(_) => Ok(HttpResponse::InternalServerError().into()),
-        })
+        .map(|res| HttpResponse::Ok().json(res))
 }

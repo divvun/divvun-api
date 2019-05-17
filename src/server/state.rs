@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use hashbrown::HashMap;
 use failure::Fail;
 use serde_derive::Serialize;
-use futures::future::Future;
+use futures::future::{ok, err, Future};
 use actix::prelude::*;
 use actix_web::error::ResponseError;
 use divvunspell::archive::SpellerArchive;
@@ -31,12 +31,28 @@ pub struct LanguageFunctions {
 
 pub trait SpellingSuggestions: Send + Sync {
     fn spelling_suggestions(&self, message: SpellerRequest, language: &str)
-        -> Box<Future<Item=Result<SpellerResponse, ApiError>, Error=ApiError>>;
+        -> Box<Future<Item=SpellerResponse, Error=ApiError>>;
 }
 
 pub trait GrammarSuggestions: Send + Sync {
     fn grammar_suggestions(&self, message: GramcheckRequest, language: &str)
         -> Box<Future<Item=Result<GramcheckOutput, ApiError>, Error=ApiError>>;
+}
+
+pub trait UnhoistFutureExt<U, E> {
+    fn unhoist(self) -> Box<Future<Item=U, Error=E>>;
+}
+
+impl<T: 'static, U: 'static, E: 'static> UnhoistFutureExt<U, E> for T
+    where
+        T: Future<Item=Result<U, E>, Error=E>,
+{
+    fn unhoist(self) -> Box<Future<Item=U, Error=E>> {
+        Box::new(self.and_then(|res| match res {
+            Ok(result) => ok(result),
+            Err(e) => err(e),
+        }))
+    }
 }
 
 pub struct State {
