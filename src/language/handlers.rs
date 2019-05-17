@@ -46,7 +46,7 @@ pub fn gramchecker_handler(
     state: web::Data<State>)
 -> impl Future<Item=HttpResponse, Error=actix_web::Error> {
 
-    let grammar_suggestions = &state.language_functions.grammar_suggesgions;
+    let grammar_suggestions = &state.language_functions.grammar_suggestions;
 
     grammar_suggestions.grammar_suggestions(        body.0, &path)
         .from_err()

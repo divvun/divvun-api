@@ -26,7 +26,7 @@ impl ResponseError for ApiError {}
 
 pub struct LanguageFunctions {
     pub spelling_suggestions: Box<SpellingSuggestions>,
-    pub grammar_suggesgions: Box<GrammarSuggestions>,
+    pub grammar_suggestions: Box<GrammarSuggestions>,
 }
 
 pub trait SpellingSuggestions: Send + Sync {
@@ -56,7 +56,7 @@ pub fn create_state() -> State {
         graphql_schema: Arc::new(create_schema()).clone(),
         language_functions: LanguageFunctions {
             spelling_suggestions: Box::new(get_speller()),
-            grammar_suggesgions: Box::new(get_gramchecker(&grammar_data_files)),
+            grammar_suggestions: Box::new(get_gramchecker(&grammar_data_files)),
         },
         gramcheck_preferences: get_gramcheck_preferences(&grammar_data_files),
     }

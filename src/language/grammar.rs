@@ -5,7 +5,6 @@ use std::io::{Error, BufRead, BufReader, Write};
 use hashbrown::HashMap;
 use serde_derive::{Deserialize, Serialize};
 use regex::Regex;
-
 use actix::prelude::*;
 use futures::future::{err, Future};
 
@@ -76,19 +75,19 @@ pub struct GramcheckPreferencesResponse {
 
 #[derive(Deserialize, Serialize)]
 pub struct GramcheckErrResponse {
-    error_text: String,
-    start_index: u32,
-    end_index: u32,
-    error_code: String,
-    description: String,
-    suggestions: Vec<String>,
-    title: String,
+    pub error_text: String,
+    pub start_index: u32,
+    pub end_index: u32,
+    pub error_code: String,
+    pub description: String,
+    pub suggestions: Vec<String>,
+    pub title: String,
 }
 
 #[derive(Deserialize, Serialize)]
 pub struct GramcheckOutput {
-    text: String,
-    errs: Vec<GramcheckErrResponse>,
+    pub text: String,
+    pub errs: Vec<GramcheckErrResponse>,
 }
 
 pub struct AsyncGramchecker {
