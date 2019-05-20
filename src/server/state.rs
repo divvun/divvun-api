@@ -36,7 +36,7 @@ pub trait SpellingSuggestions: Send + Sync {
 
 pub trait GrammarSuggestions: Send + Sync {
     fn grammar_suggestions(&self, message: GramcheckRequest, language: &str)
-        -> Box<Future<Item=Result<GramcheckOutput, ApiError>, Error=ApiError>>;
+        -> Box<Future<Item=GramcheckOutput, Error=ApiError>>;
 }
 
 pub trait UnhoistFutureExt<U, E> {

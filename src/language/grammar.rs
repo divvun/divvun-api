@@ -8,7 +8,7 @@ use regex::Regex;
 use actix::prelude::*;
 use futures::future::{err, Future};
 
-use crate::server::state::{GrammarSuggestions, ApiError};
+use crate::server::state::{GrammarSuggestions, ApiError, UnhoistFutureExt};
 
 pub struct GramcheckExecutor(pub Child);
 
@@ -96,7 +96,7 @@ pub struct AsyncGramchecker {
 
 impl GrammarSuggestions for AsyncGramchecker {
     fn grammar_suggestions(&self, message: GramcheckRequest, language: &str)
-                           -> Box<Future<Item=Result<GramcheckOutput, ApiError>, Error=ApiError>> {
+                           -> Box<Future<Item=GramcheckOutput, Error=ApiError>> {
         let gramchecker = match self.gramcheckers.get(language) {
             Some(s) => s,
             None => {
@@ -111,7 +111,8 @@ impl GrammarSuggestions for AsyncGramchecker {
                 .send(message)
                 .map_err(|err|
                     ApiError { message: format!("Something failed in the message delivery process: {}", err) }
-                ))
+                ).unhoist()
+        )
     }
 }
 
