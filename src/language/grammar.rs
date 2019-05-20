@@ -31,7 +31,7 @@ impl Actor for GramcheckExecutor {
 
 #[derive(Debug, Deserialize)]
 pub struct GramcheckRequest {
-    text: String,
+    pub text: String,
 }
 
 impl Message for GramcheckRequest {
@@ -97,6 +97,7 @@ pub struct AsyncGramchecker {
 impl GrammarSuggestions for AsyncGramchecker {
     fn grammar_suggestions(&self, message: GramcheckRequest, language: &str)
                            -> Box<Future<Item=GramcheckOutput, Error=ApiError>> {
+
         let gramchecker = match self.gramcheckers.get(language) {
             Some(s) => s,
             None => {
