@@ -1,20 +1,30 @@
 use juniper::{RootNode, EmptyMutation, FieldResult, graphql_object, GraphQLObject};
-use serde_derive::{Deserialize, Serialize};
 use futures::future::Future;
 
 use crate::server::state::State;
 use crate::language::grammar;
 use crate::language::grammar::GramcheckRequest;
+use crate::language::speller::SpellerRequest;
 
 impl juniper::Context for State {}
 
-#[derive(GraphQLObject)]
-#[graphql(description = "Text suggestions")]
+#[derive(Debug)]
 pub struct Suggestions {
-    pub grammar: Vec<GramcheckErrResponse>,
+    text: String,
+    language: String,
 }
 
-#[derive(Deserialize, Serialize, GraphQLObject)]
+#[derive(GraphQLObject)]
+pub struct Grammar {
+    pub errs: Vec<GramcheckErrResponse>,
+}
+
+#[derive(GraphQLObject)]
+pub struct Speller {
+    pub suggestions: Vec<String>,
+}
+
+#[derive(GraphQLObject)]
 #[graphql(description = "Grammar Checker errors")]
 pub struct GramcheckErrResponse {
     error_text: String,
@@ -44,24 +54,44 @@ pub struct QueryRoot;
 
 graphql_object!(QueryRoot: State |&self| {
     field suggestions(&executor, text: String, language: String) -> FieldResult<Suggestions> {
-        get_suggestions(executor.context(), &text, &language)
+        Ok(Suggestions { text, language })
     }
 });
 
-fn get_suggestions(state: &State, text: &str, language: &str) -> FieldResult<Suggestions> {
+graphql_object!(Suggestions: State |&self| {
+    description: "Text suggestions"
 
+    field grammar(&executor) -> FieldResult<Grammar> {
+        get_grammar_suggestions(executor.context(), &self.text, &self.language)
+    }
+
+    field speller(&executor) -> FieldResult<Speller> {
+        get_speller_suggestions(executor.context(), &self.text, &self.language)
+    }
+});
+
+fn get_grammar_suggestions(state: &State, text: &str, language: &str) -> FieldResult<Grammar> {
     let grammar_suggestions = state.language_functions.grammar_suggestions
         .grammar_suggestions(GramcheckRequest { text: text.to_owned() }, language)
         .wait();
 
     match grammar_suggestions {
-        Ok(gram_output) => Ok(Suggestions {
-            grammar: gram_output.errs
-                .into_iter()
-                .map(|response| {
-                    GramcheckErrResponse::from(response)
-                }).collect()
-        }),
+        Ok(gram_output) => Ok(Grammar { errs: gram_output.errs
+            .into_iter()
+            .map(|response| {
+                GramcheckErrResponse::from(response)
+            }).collect() }),
+        Err(error) => Err(error)?,
+    }
+}
+
+fn get_speller_suggestions(state: &State, text: &str, language: &str) -> FieldResult<Speller> {
+    let speller_suggestions = state.language_functions.spelling_suggestions
+        .spelling_suggestions(SpellerRequest { word: text.to_owned() }, language)
+        .wait();
+
+    match speller_suggestions {
+        Ok(speller_output) => Ok(Speller { suggestions: speller_output.suggestions }),
         Err(error) => Err(error)?
     }
 }

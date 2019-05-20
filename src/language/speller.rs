@@ -5,6 +5,8 @@ use futures::future::{err, Future};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::server::state::{SpellingSuggestions, ApiError, UnhoistFutureExt};
+use divvunspell::speller::SpellerConfig;
+use crate::language::data_files::DataFileType::Spelling;
 
 pub struct DivvunSpellExecutor(pub SpellerArchive);
 
@@ -34,7 +36,15 @@ impl Handler<SpellerRequest> for DivvunSpellExecutor {
         let suggestions = self
             .0
             .speller()
-            .suggest(&msg.word)
+            .suggest_with_config(&msg.word, &SpellerConfig {
+                n_best: Some(5),
+                max_weight: Some(10000f32),
+                beam: None,
+                with_caps: true,
+                pool_start: 128,
+                pool_max: 128,
+                seen_node_sample_rate: 20
+            })
             .into_iter()
             .map(|m| m.value)
             .collect();
