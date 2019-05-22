@@ -1,4 +1,7 @@
-use std::fs;
+use std::{fs, env};
+
+use clap::{App, Arg, ArgMatches, crate_version};
+use log::info;
 
 mod config;
 mod language;
@@ -9,14 +12,49 @@ use config::Config;
 use server::start_server;
 
 fn main() {
-    std::env::set_var("RUST_LOG", "actix_web=info");
+    env::set_var("RUST_LOG", "info");
     env_logger::init();
 
-    let config_file = "config.toml";
+    let matches = App::new("divvun-api")
+        .version(crate_version!())
+        .arg(Arg::with_name("config")
+            .short("c")
+            .long("config")
+            .value_name("FILE")
+            .help("Set a custom TOML config file")
+            .takes_value(true))
+        .get_matches();
 
-    let config = fs::read_to_string(config_file).expect(&format!("Failed to open {}", config_file));
+    let config = get_config(&matches);
+
+    start_server(&config);
+}
+
+fn get_config(matches: &ArgMatches) -> Config {
+
+    let default_path = "config.toml";
+    let divvun_env_var = "DIVVUN_API_CONFIG_PATH";
+
+    let config_file = match env::var(divvun_env_var) {
+        Ok(file) => {
+            info!("Using {} from env var {} as config", file, divvun_env_var);
+            file
+        },
+        Err(_) => match matches.value_of("config") {
+            Some(file) => {
+                info!("Using {} supplied by the CLI as config", file);
+                file
+            },
+            None => {
+                info!("Using the default {}", default_path);
+                default_path
+            },
+        }.to_owned()
+    };
+
+    let config = fs::read_to_string(&config_file).expect(&format!("Failed to open {}", config_file));
     let config: Config =
         toml::from_str(&config).expect(&format!("Failed to convert {} to TOML", config_file));
 
-    start_server(&config);
+    config
 }

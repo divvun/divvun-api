@@ -50,6 +50,5 @@ pub fn start_server(config: &Config) {
         .unwrap()
         .start();
 
-    println!("Started http server: {}", &config.addr);
     let _ = sys.run();
 }

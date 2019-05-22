@@ -6,7 +6,6 @@ use serde_derive::{Deserialize, Serialize};
 
 use crate::server::state::{SpellingSuggestions, ApiError, UnhoistFutureExt};
 use divvunspell::speller::SpellerConfig;
-use crate::language::data_files::DataFileType::Spelling;
 
 pub struct DivvunSpellExecutor(pub SpellerArchive);
 
