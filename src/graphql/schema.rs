@@ -21,6 +21,7 @@ pub struct Grammar {
 
 #[derive(GraphQLObject)]
 pub struct Speller {
+    pub is_correct: bool,
     pub suggestions: Vec<String>,
 }
 
@@ -91,7 +92,10 @@ fn get_speller_suggestions(state: &State, text: &str, language: &str) -> FieldRe
         .wait();
 
     match speller_suggestions {
-        Ok(speller_output) => Ok(Speller { suggestions: speller_output.suggestions }),
+        Ok(speller_output) => Ok(Speller {
+            is_correct: speller_output.is_correct,
+            suggestions: speller_output.suggestions,
+        }),
         Err(error) => Err(error)?
     }
 }

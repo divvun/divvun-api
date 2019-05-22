@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use hashbrown::HashMap;
 use actix::prelude::*;
 use divvunspell::archive::SpellerArchive;
@@ -21,6 +23,7 @@ pub struct SpellerRequest {
 #[derive(Deserialize, Serialize, Debug)]
 pub struct SpellerResponse {
     pub word: String,
+    pub is_correct: bool,
     pub suggestions: Vec<String>,
 }
 
@@ -32,9 +35,12 @@ impl Handler<SpellerRequest> for DivvunSpellExecutor {
     type Result = Result<SpellerResponse, ApiError>;
 
     fn handle(&mut self, msg: SpellerRequest, _: &mut Self::Context) -> Self::Result {
-        let suggestions = self
-            .0
-            .speller()
+
+        let speller = self.0.speller();
+
+        let is_correct = Arc::clone(&speller).is_correct(&msg.word);
+
+        let suggestions = speller
             .suggest_with_config(&msg.word, &SpellerConfig {
                 n_best: Some(5),
                 max_weight: Some(10000f32),
@@ -47,8 +53,10 @@ impl Handler<SpellerRequest> for DivvunSpellExecutor {
             .into_iter()
             .map(|m| m.value)
             .collect();
+
         Ok(SpellerResponse {
             word: msg.word,
+            is_correct,
             suggestions,
         })
     }
