@@ -12,7 +12,13 @@ use divvunspell::speller::SpellerConfig;
 pub struct DivvunSpellExecutor(pub SpellerArchive);
 
 impl Actor for DivvunSpellExecutor {
-    type Context = SyncContext<Self>;
+    type Context = Context<Self>;
+}
+
+impl actix::Supervised for DivvunSpellExecutor {
+    fn restarting(&mut self, _ctx: &mut Context<DivvunSpellExecutor>) {
+        println!("restarting");
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -61,6 +67,17 @@ impl Handler<SpellerRequest> for DivvunSpellExecutor {
             is_correct,
             suggestions,
         })
+    }
+}
+
+#[derive(Message)]
+struct Die;
+
+impl Handler<Die> for DivvunSpellExecutor {
+    type Result = ();
+
+    fn handle(&mut self, _: Die, ctx: &mut Context<DivvunSpellExecutor>) {
+        ctx.stop();
     }
 }
 

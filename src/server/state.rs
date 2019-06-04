@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use actix::prelude::*;
 use actix_web::error::ResponseError;
 use divvunspell::archive::SpellerArchive;
 use failure::Fail;
@@ -102,11 +101,12 @@ fn get_speller() -> AsyncSpeller {
                 .to_str()
                 .unwrap();
 
+            let speller_path = f.to_str().unwrap();
+            let ar = SpellerArchive::new(speller_path);
+
             (
                 lang_code.into(),
-                SyncArbiter::start(1, move || {
-                    let speller_path = f.to_str().unwrap();
-                    let ar = SpellerArchive::new(speller_path);
+                actix::Supervisor::start_in_arbiter(&actix::Arbiter::new(), |_| {
                     DivvunSpellExecutor(ar.unwrap())
                 }),
             )
@@ -123,11 +123,12 @@ fn get_gramchecker(grammar_data_files: &Vec<PathBuf>) -> AsyncGramchecker {
         .map(|f| {
             let lang_code = f.file_stem().unwrap().to_str().unwrap();
 
+            let grammar_checker_path = f.to_str().unwrap().to_owned();
+
             (
                 lang_code.into(),
-                SyncArbiter::start(1, move || {
-                    let grammar_checker_path = f.to_str().unwrap();
-                    GramcheckExecutor::new(grammar_checker_path)
+                actix::Supervisor::start_in_arbiter(&actix::Arbiter::new(), move |_| {
+                    GramcheckExecutor::new(&grammar_checker_path)
                         .expect(&format!("not found: {}", grammar_checker_path))
                 }),
             )

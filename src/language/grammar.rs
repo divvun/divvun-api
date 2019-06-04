@@ -7,6 +7,7 @@ use futures::future::{err, Future};
 use hashbrown::HashMap;
 use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
+use log::info;
 
 use crate::server::state::{ApiError, GrammarSuggestions, UnhoistFutureExt};
 
@@ -26,7 +27,14 @@ impl GramcheckExecutor {
 }
 
 impl Actor for GramcheckExecutor {
-    type Context = SyncContext<Self>;
+    type Context = Context<Self>;
+}
+
+impl Supervised for GramcheckExecutor {
+    fn restarting(&mut self, _ctx: &mut Context<GramcheckExecutor>) {
+
+        println!("restarting");
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -65,6 +73,19 @@ impl Handler<GramcheckRequest> for GramcheckExecutor {
                 })
             }
         };
+    }
+}
+
+#[derive(Message)]
+struct Die;
+
+impl Handler<Die> for GramcheckExecutor {
+    type Result = ();
+
+    fn handle(&mut self, _: Die, ctx: &mut Context<GramcheckExecutor>) {
+        self.0.kill().expect("child was already dead");
+        info!("Death message received, stopping");
+        ctx.stop();
     }
 }
 

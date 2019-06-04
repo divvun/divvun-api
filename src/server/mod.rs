@@ -1,4 +1,5 @@
 use std::env;
+use std::sync::Arc;
 
 use actix_web::{http::header, middleware, middleware::cors::Cors, web, App, HttpServer};
 
@@ -10,6 +11,7 @@ use crate::graphql::handlers::{graphiql, graphql};
 
 use crate::language::handlers::{
     get_available_languages_handler, get_gramcheck_preferences_handler, gramchecker_handler,
+
     speller_handler,
 };
 
@@ -18,9 +20,11 @@ pub fn start_server(config: &Config) {
 
     let sys = actix::System::new("divvun-api");
 
+    let state = Arc::new(create_state());
+
     HttpServer::new(move || {
         App::new()
-            .data(create_state())
+            .data(state.clone())
             .wrap(middleware::Logger::default())
             .wrap(
                 Cors::new()
