@@ -1,10 +1,10 @@
-use juniper::{RootNode, EmptyMutation, FieldResult, graphql_object, GraphQLObject};
 use futures::future::Future;
+use juniper::{graphql_object, EmptyMutation, FieldResult, GraphQLObject, RootNode};
 
-use crate::server::state::State;
 use crate::language::grammar;
 use crate::language::grammar::GramcheckRequest;
 use crate::language::speller::SpellerRequest;
+use crate::server::state::State;
 
 impl juniper::Context for State {}
 
@@ -72,23 +72,39 @@ graphql_object!(Suggestions: State |&self| {
 });
 
 fn get_grammar_suggestions(state: &State, text: &str, language: &str) -> FieldResult<Grammar> {
-    let grammar_suggestions = state.language_functions.grammar_suggestions
-        .grammar_suggestions(GramcheckRequest { text: text.to_owned() }, language)
+    let grammar_suggestions = state
+        .language_functions
+        .grammar_suggestions
+        .grammar_suggestions(
+            GramcheckRequest {
+                text: text.to_owned(),
+            },
+            language,
+        )
         .wait();
 
     match grammar_suggestions {
-        Ok(gram_output) => Ok(Grammar { errs: gram_output.errs
-            .into_iter()
-            .map(|response| {
-                GramcheckErrResponse::from(response)
-            }).collect() }),
+        Ok(gram_output) => Ok(Grammar {
+            errs: gram_output
+                .errs
+                .into_iter()
+                .map(|response| GramcheckErrResponse::from(response))
+                .collect(),
+        }),
         Err(error) => Err(error)?,
     }
 }
 
 fn get_speller_suggestions(state: &State, text: &str, language: &str) -> FieldResult<Speller> {
-    let speller_suggestions = state.language_functions.spelling_suggestions
-        .spelling_suggestions(SpellerRequest { word: text.to_owned() }, language)
+    let speller_suggestions = state
+        .language_functions
+        .spelling_suggestions
+        .spelling_suggestions(
+            SpellerRequest {
+                word: text.to_owned(),
+            },
+            language,
+        )
         .wait();
 
     match speller_suggestions {
@@ -96,12 +112,12 @@ fn get_speller_suggestions(state: &State, text: &str, language: &str) -> FieldRe
             is_correct: speller_output.is_correct,
             suggestions: speller_output.suggestions,
         }),
-        Err(error) => Err(error)?
+        Err(error) => Err(error)?,
     }
 }
 
 pub type Schema = RootNode<'static, QueryRoot, EmptyMutation<State>>;
 
 pub fn create_schema() -> Schema {
-     Schema::new(QueryRoot {}, EmptyMutation::new())
+    Schema::new(QueryRoot {}, EmptyMutation::new())
 }

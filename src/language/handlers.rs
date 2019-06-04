@@ -1,14 +1,17 @@
-use actix_web::{HttpResponse, web};
+use actix_web::{web, HttpResponse};
 
 use futures::future::{result, Future};
 
 use crate::server::state::State;
 
-use super::data_files::{available_languages, AvailableLanguagesResponse, AvailableLanguagesByType, DataFileType};
+use super::data_files::{
+    available_languages, AvailableLanguagesByType, AvailableLanguagesResponse, DataFileType,
+};
 use super::grammar::{GramcheckPreferencesResponse, GramcheckRequest};
 use super::speller::SpellerRequest;
 
-pub fn get_available_languages_handler() -> actix_web::Result<web::Json<AvailableLanguagesResponse>> {
+pub fn get_available_languages_handler() -> actix_web::Result<web::Json<AvailableLanguagesResponse>>
+{
     let grammar_checker_langs = available_languages(DataFileType::Grammar);
     let spell_checker_langs = available_languages(DataFileType::Spelling);
 
@@ -22,9 +25,8 @@ pub fn get_available_languages_handler() -> actix_web::Result<web::Json<Availabl
 
 pub fn get_gramcheck_preferences_handler(
     path: web::Path<String>,
-    state: web::Data<State>)
--> impl Future<Item=HttpResponse, Error=actix_web::Error> {
-
+    state: web::Data<State>,
+) -> impl Future<Item = HttpResponse, Error = actix_web::Error> {
     let prefs = &state.gramcheck_preferences;
     let language = path;
 
@@ -43,12 +45,12 @@ pub fn get_gramcheck_preferences_handler(
 pub fn gramchecker_handler(
     body: web::Json<GramcheckRequest>,
     path: web::Path<String>,
-    state: web::Data<State>)
--> impl Future<Item=HttpResponse, Error=actix_web::Error> {
-
+    state: web::Data<State>,
+) -> impl Future<Item = HttpResponse, Error = actix_web::Error> {
     let grammar_suggestions = &state.language_functions.grammar_suggestions;
 
-    grammar_suggestions.grammar_suggestions(body.0, &path)
+    grammar_suggestions
+        .grammar_suggestions(body.0, &path)
         .from_err()
         .map(|res| HttpResponse::Ok().json(res))
 }
@@ -56,12 +58,12 @@ pub fn gramchecker_handler(
 pub fn speller_handler(
     body: web::Json<SpellerRequest>,
     path: web::Path<String>,
-    state: web::Data<State>)
-    -> impl Future<Item=HttpResponse, Error=actix_web::Error> {
-
+    state: web::Data<State>,
+) -> impl Future<Item = HttpResponse, Error = actix_web::Error> {
     let spelling_suggestions = &state.language_functions.spelling_suggestions;
 
-    spelling_suggestions.spelling_suggestions(body.0, &path)
+    spelling_suggestions
+        .spelling_suggestions(body.0, &path)
         .from_err()
         .map(|res| HttpResponse::Ok().json(res))
 }

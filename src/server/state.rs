@@ -1,19 +1,23 @@
-use std::sync::Arc;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
-use hashbrown::HashMap;
-use failure::Fail;
-use serde_derive::Serialize;
-use futures::future::{ok, err, Future};
 use actix::prelude::*;
 use actix_web::error::ResponseError;
 use divvunspell::archive::SpellerArchive;
+use failure::Fail;
+use futures::future::{err, ok, Future};
+use hashbrown::HashMap;
+use serde_derive::Serialize;
 
-use crate::graphql::schema::Schema;
 use crate::graphql::schema::create_schema;
-use crate::language::speller::{AsyncSpeller, SpellerResponse, SpellerRequest, DivvunSpellExecutor};
-use crate::language::grammar::{AsyncGramchecker, GramcheckOutput, GramcheckRequest, GramcheckExecutor, list_preferences};
+use crate::graphql::schema::Schema;
 use crate::language::data_files::{get_data_files, DataFileType};
+use crate::language::grammar::{
+    list_preferences, AsyncGramchecker, GramcheckExecutor, GramcheckOutput, GramcheckRequest,
+};
+use crate::language::speller::{
+    AsyncSpeller, DivvunSpellExecutor, SpellerRequest, SpellerResponse,
+};
 use std::path::PathBuf;
 
 #[derive(Fail, Debug, Serialize)]
@@ -30,24 +34,30 @@ pub struct LanguageFunctions {
 }
 
 pub trait SpellingSuggestions: Send + Sync {
-    fn spelling_suggestions(&self, message: SpellerRequest, language: &str)
-        -> Box<Future<Item=SpellerResponse, Error=ApiError>>;
+    fn spelling_suggestions(
+        &self,
+        message: SpellerRequest,
+        language: &str,
+    ) -> Box<Future<Item = SpellerResponse, Error = ApiError>>;
 }
 
 pub trait GrammarSuggestions: Send + Sync {
-    fn grammar_suggestions(&self, message: GramcheckRequest, language: &str)
-        -> Box<Future<Item=GramcheckOutput, Error=ApiError>>;
+    fn grammar_suggestions(
+        &self,
+        message: GramcheckRequest,
+        language: &str,
+    ) -> Box<Future<Item = GramcheckOutput, Error = ApiError>>;
 }
 
 pub trait UnhoistFutureExt<U, E> {
-    fn unhoist(self) -> Box<Future<Item=U, Error=E>>;
+    fn unhoist(self) -> Box<Future<Item = U, Error = E>>;
 }
 
 impl<T: 'static, U: 'static, E: 'static> UnhoistFutureExt<U, E> for T
-    where
-        T: Future<Item=Result<U, E>, Error=E>,
+where
+    T: Future<Item = Result<U, E>, Error = E>,
 {
-    fn unhoist(self) -> Box<Future<Item=U, Error=E>> {
+    fn unhoist(self) -> Box<Future<Item = U, Error = E>> {
         Box::new(self.and_then(|res| match res {
             Ok(result) => ok(result),
             Err(e) => err(e),
@@ -62,10 +72,9 @@ pub struct State {
 }
 
 pub fn create_state() -> State {
-    let grammar_data_files = get_data_files(DataFileType::Grammar)
-        .unwrap_or_else(|e| {
-            eprintln!("Error getting grammar data files: {}", e);
-            vec![]
+    let grammar_data_files = get_data_files(DataFileType::Grammar).unwrap_or_else(|e| {
+        eprintln!("Error getting grammar data files: {}", e);
+        vec![]
     });
 
     State {
@@ -108,7 +117,6 @@ fn get_speller() -> AsyncSpeller {
 }
 
 fn get_gramchecker(grammar_data_files: &Vec<PathBuf>) -> AsyncGramchecker {
-
     let gramcheckers = grammar_data_files
         .to_owned()
         .into_iter()
@@ -129,8 +137,9 @@ fn get_gramchecker(grammar_data_files: &Vec<PathBuf>) -> AsyncGramchecker {
     AsyncGramchecker { gramcheckers }
 }
 
-fn get_gramcheck_preferences(grammar_data_files: &Vec<PathBuf>) -> HashMap<String, BTreeMap<String, String>> {
-
+fn get_gramcheck_preferences(
+    grammar_data_files: &Vec<PathBuf>,
+) -> HashMap<String, BTreeMap<String, String>> {
     let gramcheck_preferences = grammar_data_files
         .into_iter()
         .map(|f| {

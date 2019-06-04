@@ -1,14 +1,14 @@
 use std::collections::BTreeMap;
+use std::io::{BufRead, BufReader, Error, Write};
 use std::process::{Child, Command, Stdio};
-use std::io::{Error, BufRead, BufReader, Write};
 
-use hashbrown::HashMap;
-use serde_derive::{Deserialize, Serialize};
-use regex::Regex;
 use actix::prelude::*;
 use futures::future::{err, Future};
+use hashbrown::HashMap;
+use regex::Regex;
+use serde_derive::{Deserialize, Serialize};
 
-use crate::server::state::{GrammarSuggestions, ApiError, UnhoistFutureExt};
+use crate::server::state::{ApiError, GrammarSuggestions, UnhoistFutureExt};
 
 pub struct GramcheckExecutor(pub Child);
 
@@ -95,14 +95,16 @@ pub struct AsyncGramchecker {
 }
 
 impl GrammarSuggestions for AsyncGramchecker {
-    fn grammar_suggestions(&self, message: GramcheckRequest, language: &str)
-                           -> Box<Future<Item=GramcheckOutput, Error=ApiError>> {
-
+    fn grammar_suggestions(
+        &self,
+        message: GramcheckRequest,
+        language: &str,
+    ) -> Box<Future<Item = GramcheckOutput, Error = ApiError>> {
         let gramchecker = match self.gramcheckers.get(language) {
             Some(s) => s,
             None => {
                 return Box::new(err(ApiError {
-                    message: "No grammar checker available for that language".to_owned()
+                    message: "No grammar checker available for that language".to_owned(),
                 }));
             }
         };
@@ -110,9 +112,10 @@ impl GrammarSuggestions for AsyncGramchecker {
         Box::new(
             gramchecker
                 .send(message)
-                .map_err(|err|
-                    ApiError { message: format!("Something failed in the message delivery process: {}", err) }
-                ).unhoist()
+                .map_err(|err| ApiError {
+                    message: format!("Something failed in the message delivery process: {}", err),
+                })
+                .unhoist(),
         )
     }
 }
