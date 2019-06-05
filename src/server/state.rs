@@ -46,6 +46,7 @@ pub trait GrammarSuggestions: Send + Sync {
         message: GramcheckRequest,
         language: &str,
     ) -> Box<Future<Item = GramcheckOutput, Error = ApiError>>;
+    fn die(&self, language: &str) -> Box<Future<Item=String, Error=ApiError>>;
 }
 
 pub trait UnhoistFutureExt<U, E> {

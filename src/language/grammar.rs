@@ -3,7 +3,7 @@ use std::io::{BufRead, BufReader, Error, Write};
 use std::process::{Child, Command, Stdio};
 
 use actix::prelude::*;
-use futures::future::{err, Future};
+use futures::future::{ok, err, Future};
 use hashbrown::HashMap;
 use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
@@ -77,7 +77,7 @@ impl Handler<GramcheckRequest> for GramcheckExecutor {
 }
 
 #[derive(Message)]
-struct Die;
+pub struct Die;
 
 impl Handler<Die> for GramcheckExecutor {
     type Result = ();
@@ -138,6 +138,23 @@ impl GrammarSuggestions for AsyncGramchecker {
                 })
                 .unhoist(),
         )
+    }
+
+    fn die(&self, language: &str) -> Box<Future<Item=String, Error=ApiError>> {
+        let gramchecker = match self.gramcheckers.get(language) {
+            Some(s) => s,
+            None => {
+                return Box::new(err(ApiError {
+                    message: "No grammar checker available for that language".to_owned(),
+                }));
+            }
+        };
+
+        println!("killing gramchecker");
+
+        let _lar = gramchecker.send(Die);
+
+        return Box::new(ok("blar".to_owned()));
     }
 }
 
