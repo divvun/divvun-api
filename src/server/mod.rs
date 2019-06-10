@@ -61,5 +61,5 @@ pub fn start_server(config: &Config) {
     .unwrap()
     .start();
 
-    let _ = sys.run();
+    sys.run().unwrap();
 }

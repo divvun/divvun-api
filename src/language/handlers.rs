@@ -57,8 +57,6 @@ pub fn gramchecker_handler(
 
 pub fn gramchecker_die_handler(path: web::Path<String>, state: web::Data<State>)
     -> impl Future<Item=HttpResponse, Error=actix_web::Error> {
-    println!("dtrdrrtd");
-
     let grammar_suggestions = &state.language_functions.grammar_suggestions;
 
     grammar_suggestions.die(&path)

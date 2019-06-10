@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
+use actix_web::{web, HttpResponse, Responder};
 use actix_web::error::ResponseError;
 use divvunspell::archive::SpellerArchive;
 use failure::Fail;
@@ -18,6 +19,7 @@ use crate::language::speller::{
     AsyncSpeller, DivvunSpellExecutor, SpellerRequest, SpellerResponse,
 };
 use std::path::PathBuf;
+use serde_json::json;
 
 #[derive(Fail, Debug, Serialize)]
 #[fail(display = "api error")]
@@ -25,7 +27,13 @@ pub struct ApiError {
     pub message: String,
 }
 
-impl ResponseError for ApiError {}
+impl ResponseError for ApiError {
+    fn render_response(&self) -> HttpResponse {
+        return HttpResponse::InternalServerError()
+            .content_type("application/json")
+            .json(json!({ "message": self.message }))
+    }
+}
 
 pub struct LanguageFunctions {
     pub spelling_suggestions: Box<SpellingSuggestions>,
@@ -138,7 +146,7 @@ fn get_gramchecker(grammar_data_files: &Vec<PathBuf>) -> AsyncGramchecker {
         })
         .collect();
 
-    AsyncGramchecker { gramcheckers }
+    AsyncGramchecker { gramcheckers: Arc::new(RwLock::new(gramcheckers)) }
 }
 
 fn get_gramcheck_preferences(

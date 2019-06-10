@@ -1,13 +1,14 @@
 use std::collections::BTreeMap;
 use std::io::{BufRead, BufReader, Error, Write};
 use std::process::{Child, Command, Stdio};
+use std::sync::{Arc, RwLock};
 
 use actix::prelude::*;
 use futures::future::{ok, err, Future};
 use hashbrown::HashMap;
 use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
-use log::info;
+use log::{info, error};
 
 use crate::server::state::{ApiError, GrammarSuggestions, UnhoistFutureExt};
 
@@ -26,6 +27,12 @@ impl GramcheckExecutor {
     }
 }
 
+impl Drop for GramcheckExecutor {
+    fn drop(&mut self) {
+        info!("dropping GramcheckExecutor");
+    }
+}
+
 impl Actor for GramcheckExecutor {
     type Context = Context<Self>;
 }
@@ -33,7 +40,7 @@ impl Actor for GramcheckExecutor {
 impl Supervised for GramcheckExecutor {
     fn restarting(&mut self, _ctx: &mut Context<GramcheckExecutor>) {
 
-        println!("restarting");
+        info!("restarting");
     }
 }
 
@@ -50,6 +57,8 @@ impl Handler<GramcheckRequest> for GramcheckExecutor {
     type Result = Result<GramcheckOutput, ApiError>;
 
     fn handle(&mut self, msg: GramcheckRequest, _: &mut Self::Context) -> Self::Result {
+        info!("handling grammar");
+
         let stdin = self.0.stdin.as_mut().expect("Failed to open stdin");
         let mut stdout = BufReader::new(self.0.stdout.as_mut().expect("stdout to not be dead"));
 
@@ -76,14 +85,23 @@ impl Handler<GramcheckRequest> for GramcheckExecutor {
     }
 }
 
-#[derive(Message)]
 pub struct Die;
+
+impl Message for Die {
+    type Result = ();
+}
 
 impl Handler<Die> for GramcheckExecutor {
     type Result = ();
 
-    fn handle(&mut self, _: Die, ctx: &mut Context<GramcheckExecutor>) {
-        self.0.kill().expect("child was already dead");
+    fn handle(&mut self, _: Die, ctx: &mut Self::Context) -> Self::Result {
+        info!("handling die");
+
+        match self.0.kill() {
+            Ok(_) => info!("Child killed"),
+            Err(e) => error!("{}", e),
+        };
+
         info!("Death message received, stopping");
         ctx.stop();
     }
@@ -112,7 +130,7 @@ pub struct GramcheckOutput {
 }
 
 pub struct AsyncGramchecker {
-    pub gramcheckers: HashMap<String, Addr<GramcheckExecutor>>,
+    pub gramcheckers: Arc<RwLock<HashMap<String, Addr<GramcheckExecutor>>>>,
 }
 
 impl GrammarSuggestions for AsyncGramchecker {
@@ -121,7 +139,9 @@ impl GrammarSuggestions for AsyncGramchecker {
         message: GramcheckRequest,
         language: &str,
     ) -> Box<Future<Item = GramcheckOutput, Error = ApiError>> {
-        let gramchecker = match self.gramcheckers.get(language) {
+        let lock = self.gramcheckers.read().unwrap();
+
+        let gramchecker = match lock.get(language) {
             Some(s) => s,
             None => {
                 return Box::new(err(ApiError {
@@ -141,7 +161,9 @@ impl GrammarSuggestions for AsyncGramchecker {
     }
 
     fn die(&self, language: &str) -> Box<Future<Item=String, Error=ApiError>> {
-        let gramchecker = match self.gramcheckers.get(language) {
+        let mut lock = self.gramcheckers.write().unwrap();
+
+        let gramchecker = match lock.remove(language) {
             Some(s) => s,
             None => {
                 return Box::new(err(ApiError {
@@ -150,11 +172,23 @@ impl GrammarSuggestions for AsyncGramchecker {
             }
         };
 
-        println!("killing gramchecker");
+        info!("killing gramchecker");
 
-        let _lar = gramchecker.send(Die);
+        let cloned_gramcheckers = Arc::clone(&self.gramcheckers);
+        let owned_lang = language.to_owned();
 
-        return Box::new(ok("blar".to_owned()));
+        Box::new(gramchecker.send(Die)
+            .map_err(move |err| {
+                let mut lock = cloned_gramcheckers.write().unwrap();
+                lock.insert(owned_lang, gramchecker);
+
+                ApiError {
+                    message: format!("Something failed in the message delivery process: {}", err)
+                }
+            })
+            .and_then(|_| {
+                ok("blar".to_owned())
+            }))
     }
 }
 
