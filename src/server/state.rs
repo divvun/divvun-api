@@ -1,8 +1,8 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, RwLock};
 
-use actix_web::HttpResponse;
 use actix_web::error::ResponseError;
+use actix_web::HttpResponse;
 use divvunspell::archive::SpellerArchive;
 use failure::Fail;
 use futures::future::{err, ok, Future};
@@ -18,8 +18,8 @@ use crate::language::grammar::{
 use crate::language::speller::{
     AsyncSpeller, DivvunSpellExecutor, SpellerRequest, SpellerResponse,
 };
-use std::path::PathBuf;
 use serde_json::json;
+use std::path::PathBuf;
 
 #[derive(Fail, Debug, Serialize)]
 #[fail(display = "api error")]
@@ -31,7 +31,7 @@ impl ResponseError for ApiError {
     fn render_response(&self) -> HttpResponse {
         return HttpResponse::InternalServerError()
             .content_type("application/json")
-            .json(json!({ "message": self.message }))
+            .json(json!({ "message": self.message }));
     }
 }
 
@@ -54,8 +54,8 @@ pub trait GrammarSuggestions: Send + Sync {
         message: GramcheckRequest,
         language: &str,
     ) -> Box<Future<Item = GramcheckOutput, Error = ApiError>>;
-    fn add(&self, language: &str, path: PathBuf) -> Box<Future<Item=String, Error=ApiError>>;
-    fn remove(&self, language: &str) -> Box<Future<Item=String, Error=ApiError>>;
+    fn add(&self, language: &str, path: PathBuf) -> Box<Future<Item = String, Error = ApiError>>;
+    fn remove(&self, language: &str) -> Box<Future<Item = String, Error = ApiError>>;
 }
 
 pub trait UnhoistFutureExt<U, E> {
@@ -147,7 +147,9 @@ fn get_gramchecker(grammar_data_files: &Vec<PathBuf>) -> AsyncGramchecker {
         })
         .collect();
 
-    AsyncGramchecker { gramcheckers: Arc::new(RwLock::new(gramcheckers)) }
+    AsyncGramchecker {
+        gramcheckers: Arc::new(RwLock::new(gramcheckers)),
+    }
 }
 
 fn get_gramcheck_preferences(

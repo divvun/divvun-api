@@ -5,11 +5,11 @@ use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, RwLock};
 
 use actix::prelude::*;
-use futures::future::{ok, err, Future};
+use futures::future::{err, ok, Future};
 use hashbrown::HashMap;
+use log::{error, info};
 use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
-use log::{info, error};
 
 use crate::server::state::{ApiError, GrammarSuggestions, UnhoistFutureExt};
 
@@ -40,7 +40,6 @@ impl Actor for GramcheckExecutor {
 
 impl Supervised for GramcheckExecutor {
     fn restarting(&mut self, _ctx: &mut Context<GramcheckExecutor>) {
-
         info!("restarting");
     }
 }
@@ -161,7 +160,7 @@ impl GrammarSuggestions for AsyncGramchecker {
         )
     }
 
-    fn add(&self, language: &str, path: PathBuf) -> Box<Future<Item=String, Error=ApiError>> {
+    fn add(&self, language: &str, path: PathBuf) -> Box<Future<Item = String, Error = ApiError>> {
         let mut lock = self.gramcheckers.write().unwrap();
 
         info!("adding gramchecker");
@@ -176,7 +175,7 @@ impl GrammarSuggestions for AsyncGramchecker {
         Box::new(ok("blar".to_owned()))
     }
 
-    fn remove(&self, language: &str) -> Box<Future<Item=String, Error=ApiError>> {
+    fn remove(&self, language: &str) -> Box<Future<Item = String, Error = ApiError>> {
         let mut lock = self.gramcheckers.write().unwrap();
 
         let gramchecker = match lock.remove(language) {
@@ -193,18 +192,22 @@ impl GrammarSuggestions for AsyncGramchecker {
         let cloned_gramcheckers = Arc::clone(&self.gramcheckers);
         let owned_lang = language.to_owned();
 
-        Box::new(gramchecker.send(Die)
-            .map_err(move |err| {
-                let mut lock = cloned_gramcheckers.write().unwrap();
-                lock.insert(owned_lang, gramchecker);
+        Box::new(
+            gramchecker
+                .send(Die)
+                .map_err(move |err| {
+                    let mut lock = cloned_gramcheckers.write().unwrap();
+                    lock.insert(owned_lang, gramchecker);
 
-                ApiError {
-                    message: format!("Something failed in the message delivery process: {}", err)
-                }
-            })
-            .and_then(|_| {
-                ok("blar".to_owned())
-            }))
+                    ApiError {
+                        message: format!(
+                            "Something failed in the message delivery process: {}",
+                            err
+                        ),
+                    }
+                })
+                .and_then(|_| ok("blar".to_owned())),
+        )
     }
 }
 

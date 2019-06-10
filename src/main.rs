@@ -12,7 +12,7 @@ mod watcher;
 use config::Config;
 use server::start_server;
 use server::state::create_state;
-use watcher::{Watcher, Start};
+use watcher::{Start, Watcher};
 
 fn main() {
     env::set_var("RUST_LOG", "info");
@@ -40,7 +40,10 @@ fn main() {
 
     let watcher_state = state.clone();
     let addr = actix::SyncArbiter::start(1, move || Watcher);
-    addr.try_send(Start { state: watcher_state }).unwrap();
+    addr.try_send(Start {
+        state: watcher_state,
+    })
+    .unwrap();
 
     system.run().unwrap();
 }
