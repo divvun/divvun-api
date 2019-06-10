@@ -65,8 +65,10 @@ where
     }
 }
 
-pub struct State {
-    pub graphql_schema: Arc<Schema>,
+pub type State = Arc<InnerState>;
+
+pub struct InnerState {
+    pub graphql_schema: Schema,
     pub language_functions: LanguageFunctions,
     pub gramcheck_preferences: HashMap<String, BTreeMap<String, String>>,
 }
@@ -77,14 +79,14 @@ pub fn create_state() -> State {
         vec![]
     });
 
-    State {
-        graphql_schema: Arc::new(create_schema()).clone(),
+    Arc::new(InnerState {
+        graphql_schema: create_schema(),
         language_functions: LanguageFunctions {
             spelling_suggestions: Box::new(get_speller()),
             grammar_suggestions: Box::new(get_gramchecker(&grammar_data_files)),
         },
         gramcheck_preferences: get_gramcheck_preferences(&grammar_data_files),
-    }
+    })
 }
 
 fn get_speller() -> AsyncSpeller {

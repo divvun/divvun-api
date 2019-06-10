@@ -4,9 +4,9 @@ use juniper::{graphql_object, EmptyMutation, FieldResult, GraphQLObject, RootNod
 use crate::language::grammar;
 use crate::language::grammar::GramcheckRequest;
 use crate::language::speller::SpellerRequest;
-use crate::server::state::State;
+use crate::server::state::InnerState;
 
-impl juniper::Context for State {}
+impl juniper::Context for InnerState {}
 
 #[derive(Debug)]
 pub struct Suggestions {
@@ -53,13 +53,13 @@ impl From<grammar::GramcheckErrResponse> for GramcheckErrResponse {
 
 pub struct QueryRoot;
 
-graphql_object!(QueryRoot: State |&self| {
+graphql_object!(QueryRoot: InnerState |&self| {
     field suggestions(&executor, text: String, language: String) -> FieldResult<Suggestions> {
         Ok(Suggestions { text, language })
     }
 });
 
-graphql_object!(Suggestions: State |&self| {
+graphql_object!(Suggestions: InnerState |&self| {
     description: "Text suggestions"
 
     field grammar(&executor) -> FieldResult<Grammar> {
@@ -71,7 +71,7 @@ graphql_object!(Suggestions: State |&self| {
     }
 });
 
-fn get_grammar_suggestions(state: &State, text: &str, language: &str) -> FieldResult<Grammar> {
+fn get_grammar_suggestions(state: &InnerState, text: &str, language: &str) -> FieldResult<Grammar> {
     let grammar_suggestions = state
         .language_functions
         .grammar_suggestions
@@ -95,7 +95,7 @@ fn get_grammar_suggestions(state: &State, text: &str, language: &str) -> FieldRe
     }
 }
 
-fn get_speller_suggestions(state: &State, text: &str, language: &str) -> FieldResult<Speller> {
+fn get_speller_suggestions(state: &InnerState, text: &str, language: &str) -> FieldResult<Speller> {
     let speller_suggestions = state
         .language_functions
         .spelling_suggestions
@@ -116,7 +116,7 @@ fn get_speller_suggestions(state: &State, text: &str, language: &str) -> FieldRe
     }
 }
 
-pub type Schema = RootNode<'static, QueryRoot, EmptyMutation<State>>;
+pub type Schema = RootNode<'static, QueryRoot, EmptyMutation<InnerState>>;
 
 pub fn create_schema() -> Schema {
     Schema::new(QueryRoot {}, EmptyMutation::new())

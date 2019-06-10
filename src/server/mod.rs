@@ -20,11 +20,11 @@ pub fn start_server(config: &Config) {
 
     let sys = actix::System::new("divvun-api");
 
-    let state = Arc::new(create_state());
+    let state = create_state();
 
     HttpServer::new(move || {
         App::new()
-            .data(state.clone())
+            .data(Arc::clone(&state))
             .wrap(middleware::Logger::default())
             .wrap(
                 Cors::new()
