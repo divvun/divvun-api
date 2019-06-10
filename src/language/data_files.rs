@@ -94,7 +94,7 @@ pub fn get_data_files(data_type: DataFileType) -> std::io::Result<Vec<PathBuf>> 
     Ok(paths)
 }
 
-fn get_data_dir(data_type: DataFileType) -> PathBuf {
+pub fn get_data_dir(data_type: DataFileType) -> PathBuf {
     let data_dir = match ProjectDirs::from("no", "uit", "api-giellalt") {
         Some(v) => v.data_dir().to_owned(),
         None => PathBuf::from("./"),

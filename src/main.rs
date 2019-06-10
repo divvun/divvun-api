@@ -7,9 +7,12 @@ mod config;
 mod graphql;
 mod language;
 mod server;
+mod watcher;
 
 use config::Config;
 use server::start_server;
+use server::state::create_state;
+use watcher::{Watcher, Start};
 
 fn main() {
     env::set_var("RUST_LOG", "info");
@@ -29,7 +32,17 @@ fn main() {
 
     let config = get_config(&matches);
 
-    start_server(&config);
+    let system = actix::System::new("divvun-api");
+    let state = create_state();
+
+    let server_state = state.clone();
+    start_server(server_state, &config);
+
+    let watcher_state = state.clone();
+    let addr = actix::SyncArbiter::start(1, move || Watcher);
+    addr.try_send(Start { state: watcher_state }).unwrap();
+
+    system.run().unwrap();
 }
 
 fn get_config(matches: &ArgMatches) -> Config {

@@ -59,7 +59,7 @@ pub fn gramchecker_die_handler(path: web::Path<String>, state: web::Data<State>)
     -> impl Future<Item=HttpResponse, Error=actix_web::Error> {
     let grammar_suggestions = &state.language_functions.grammar_suggestions;
 
-    grammar_suggestions.die(&path)
+    grammar_suggestions.remove(&path)
         .from_err()
         .map(|_| HttpResponse::Ok().finish())
 }

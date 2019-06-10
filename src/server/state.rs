@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::{Arc, RwLock};
 
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::HttpResponse;
 use actix_web::error::ResponseError;
 use divvunspell::archive::SpellerArchive;
 use failure::Fail;
@@ -54,7 +54,8 @@ pub trait GrammarSuggestions: Send + Sync {
         message: GramcheckRequest,
         language: &str,
     ) -> Box<Future<Item = GramcheckOutput, Error = ApiError>>;
-    fn die(&self, language: &str) -> Box<Future<Item=String, Error=ApiError>>;
+    fn add(&self, language: &str, path: PathBuf) -> Box<Future<Item=String, Error=ApiError>>;
+    fn remove(&self, language: &str) -> Box<Future<Item=String, Error=ApiError>>;
 }
 
 pub trait UnhoistFutureExt<U, E> {

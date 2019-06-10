@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::io::{BufRead, BufReader, Error, Write};
+use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::{Arc, RwLock};
 
@@ -160,7 +161,22 @@ impl GrammarSuggestions for AsyncGramchecker {
         )
     }
 
-    fn die(&self, language: &str) -> Box<Future<Item=String, Error=ApiError>> {
+    fn add(&self, language: &str, path: PathBuf) -> Box<Future<Item=String, Error=ApiError>> {
+        let mut lock = self.gramcheckers.write().unwrap();
+
+        info!("adding gramchecker");
+
+        let gramchecker = actix::Supervisor::start_in_arbiter(&actix::Arbiter::new(), move |_| {
+            GramcheckExecutor::new(&path.to_str().unwrap())
+                .expect(&format!("not found: {}", path.display()))
+        });
+
+        lock.insert(language.to_owned(), gramchecker);
+
+        Box::new(ok("blar".to_owned()))
+    }
+
+    fn remove(&self, language: &str) -> Box<Future<Item=String, Error=ApiError>> {
         let mut lock = self.gramcheckers.write().unwrap();
 
         let gramchecker = match lock.remove(language) {
