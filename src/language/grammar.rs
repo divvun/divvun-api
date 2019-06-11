@@ -258,27 +258,22 @@ impl GrammarSuggestions for AsyncGramchecker {
 }
 
 pub fn list_preferences(data_file_path: &str) -> Result<BTreeMap<String, String>, Error> {
-    let mut process = Command::new("divvun-checker")
+    let process = Command::new("divvun-checker")
         .arg("-a")
         .arg(data_file_path)
         .arg("-p")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
-
-    let stdout = BufReader::new(process.stdout.as_mut().expect("stdout to not be dead"));
+        .output()?;
 
     let regex = Regex::new(r"- \[.\] ([^\s+]+)\s+(.+)$").expect("valid regex");
+    let toggle_separator = "==== Toggles: ====";
 
-    let categories: BTreeMap<String, String> = stdout
+    let categories: BTreeMap<String, String> = String::from_utf8(process.stdout)
+        .map_err(to_io_err)?
         .lines()
-        .into_iter()
-        .map(|l| l.unwrap())
-        .skip_while(|l| l != "==== Toggles: ====")
+        .skip_while(|&l| l != toggle_separator)
         .skip(1)
         // temporary solution
-        .skip_while(|l| l != "==== Toggles: ====")
+        .skip_while(|&l| l != toggle_separator)
         .skip(1)
         .map(|l| {
             regex
@@ -291,6 +286,10 @@ pub fn list_preferences(data_file_path: &str) -> Result<BTreeMap<String, String>
         .collect();
 
     Ok(categories)
+}
+
+fn to_io_err(cause: impl ToString) -> Error {
+    std::io::Error::new(std::io::ErrorKind::Other, cause.to_string())
 }
 
 #[cfg(test)]
