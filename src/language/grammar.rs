@@ -6,31 +6,61 @@ use std::sync::Arc;
 use actix::prelude::*;
 use futures::future::{err, ok, Future};
 use hashbrown::HashMap;
-use log::{error, info};
+use log::{error, info, warn};
 use parking_lot::RwLock;
 use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
 
 use crate::server::state::{ApiError, GrammarSuggestions, UnhoistFutureExt};
 
-pub struct GramcheckExecutor(pub Child);
+pub struct GramcheckExecutor {
+    pub child: Child,
+    pub path: String,
+    pub language: String,
+    pub terminated: bool,
+}
 
 impl GramcheckExecutor {
-    pub fn new(data_file_path: &str) -> Result<Self, Error> {
-        let process = Command::new("divvun-checker")
-            .arg("-a")
-            .arg(data_file_path)
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()?;
-        Ok(Self(process))
+    pub fn new(data_file_path: &str, language: &str) -> Result<Self, Error> {
+        let child = start_divvun_checker(data_file_path)?;
+
+        Ok(Self {
+            child,
+            path: data_file_path.to_owned(),
+            language: language.to_owned(),
+            terminated: false,
+        })
     }
+
+    fn kill_child(&mut self) {
+        match self.child.kill() {
+            Ok(_) => {
+                // This blocks and may cause issues if the child doesn't properly die
+                match self.child.wait() {
+                    Ok(_) => info!("Child killed"),
+                    Err(e) => error!("Failed to kill child: {}", e),
+                }
+            },
+            Err(e) => error!("Failed to kill child: {}", e),
+        };
+    }
+}
+
+fn start_divvun_checker(data_file_path: &str) -> Result<Child, Error> {
+    let process = Command::new("divvun-checker")
+        .arg("-a")
+        .arg(data_file_path)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
+
+    Ok(process)
 }
 
 impl Drop for GramcheckExecutor {
     fn drop(&mut self) {
-        info!("dropping GramcheckExecutor");
+        info!("Dropping GramcheckExecutor for language `{}`", &self.language);
     }
 }
 
@@ -40,7 +70,22 @@ impl Actor for GramcheckExecutor {
 
 impl Supervised for GramcheckExecutor {
     fn restarting(&mut self, _ctx: &mut Context<GramcheckExecutor>) {
-        info!("restarting");
+        if !self.terminated {
+            warn!("Actor for {} died, restarting", &self.language);
+
+            // Killing previous child. Reusing the child would be more eco-friendly,
+            // but there seems no reliable way to check the status of the child
+            self.kill_child();
+            self.child = match start_divvun_checker(&self.path) {
+                Ok(child) => child,
+                Err(e) => {
+                    error!("Failed to spawn child for language `{}`!", &self.language);
+                    panic!(e)
+                }
+            }
+        } else {
+            warn!("Attempting to restart terminated actor for language `{}`", &self.language);
+        }
     }
 }
 
@@ -59,8 +104,8 @@ impl Handler<GramcheckRequest> for GramcheckExecutor {
     fn handle(&mut self, msg: GramcheckRequest, _: &mut Self::Context) -> Self::Result {
         info!("handling grammar");
 
-        let stdin = self.0.stdin.as_mut().expect("Failed to open stdin");
-        let mut stdout = BufReader::new(self.0.stdout.as_mut().expect("stdout to not be dead"));
+        let stdin = self.child.stdin.as_mut().expect("Failed to open stdin");
+        let mut stdout = BufReader::new(self.child.stdout.as_mut().expect("stdout to not be dead"));
 
         let cleaned_msg = msg
             .text
@@ -95,13 +140,16 @@ impl Handler<Die> for GramcheckExecutor {
     type Result = ();
 
     fn handle(&mut self, _: Die, ctx: &mut Self::Context) -> Self::Result {
-        // This doesn't always seem to work on Linux and defunct children linger
-        match self.0.kill() {
-            Ok(_) => info!("Child killed"),
-            Err(e) => error!("{}", e),
-        };
+        self.kill_child();
 
-        info!("Death message received, stopping actor");
+        info!(
+            "Death message received, stopping actor for language `{}`",
+            &self.language
+        );
+
+        self.terminated = true;
+
+        // The actor will restart because it's supervised, but it should be dropped shortly after
         ctx.stop();
     }
 }
@@ -162,11 +210,12 @@ impl GrammarSuggestions for AsyncGramchecker {
     fn add(&self, language: &str, path: &str) -> Box<Future<Item = String, Error = ApiError>> {
         let mut lock = self.gramcheckers.write();
 
-        info!("adding gramchecker");
+        info!("Adding gramchecker for {}", language);
 
         let gramchecker_path = path.to_owned();
+        let owned_language = language.to_owned();
         let gramchecker = actix::Supervisor::start_in_arbiter(&actix::Arbiter::new(), move |_| {
-            GramcheckExecutor::new(&gramchecker_path)
+            GramcheckExecutor::new(&gramchecker_path, &owned_language)
                 .expect(&format!("not found: {}", &gramchecker_path))
         });
 
@@ -187,7 +236,7 @@ impl GrammarSuggestions for AsyncGramchecker {
             }
         };
 
-        info!("killing gramchecker");
+        info!("Killing gramchecker for {}", language);
 
         let cloned_gramcheckers = Arc::clone(&self.gramcheckers);
         let owned_lang = language.to_owned();

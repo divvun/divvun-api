@@ -134,14 +134,14 @@ fn get_gramchecker(grammar_data_files: &Vec<PathBuf>) -> AsyncGramchecker {
         .to_owned()
         .into_iter()
         .map(|f| {
-            let lang_code = f.file_stem().unwrap().to_str().unwrap();
+            let lang_code = f.file_stem().unwrap().to_str().unwrap().to_owned();
 
             let grammar_checker_path = f.to_str().unwrap().to_owned();
 
             (
-                lang_code.into(),
+                lang_code.to_owned(),
                 actix::Supervisor::start_in_arbiter(&actix::Arbiter::new(), move |_| {
-                    GramcheckExecutor::new(&grammar_checker_path)
+                    GramcheckExecutor::new(&grammar_checker_path, &lang_code.to_owned())
                         .expect(&format!("not found: {}", grammar_checker_path))
                 }),
             )
