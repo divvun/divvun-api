@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use actix_web::error::ResponseError;
 use actix_web::HttpResponse;
@@ -7,6 +7,7 @@ use divvunspell::archive::SpellerArchive;
 use failure::Fail;
 use futures::future::{err, ok, Future};
 use hashbrown::HashMap;
+use parking_lot::RwLock;
 use serde_derive::Serialize;
 
 use crate::graphql::schema::create_schema;
@@ -54,7 +55,7 @@ pub trait GrammarSuggestions: Send + Sync {
         message: GramcheckRequest,
         language: &str,
     ) -> Box<Future<Item = GramcheckOutput, Error = ApiError>>;
-    fn add(&self, language: &str, path: PathBuf) -> Box<Future<Item = String, Error = ApiError>>;
+    fn add(&self, language: &str, path: &str) -> Box<Future<Item = String, Error = ApiError>>;
     fn remove(&self, language: &str) -> Box<Future<Item = String, Error = ApiError>>;
 }
 

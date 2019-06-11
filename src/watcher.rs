@@ -34,26 +34,50 @@ impl Handler<Start> for Watcher {
         let dir = get_data_dir(DataFileType::Grammar);
         watcher.watch(&dir, RecursiveMode::NonRecursive).unwrap();
 
-        info!("Watching directory {} for grammar files", dir.display());
+        info!("Watching directory `{}` for grammar files", dir.display());
 
         loop {
             match rx.recv() {
                 Ok(event) => match &event {
                     DebouncedEvent::Create(path) => {
-                        let extension = path.extension().unwrap().to_str().unwrap();
+                        let extension = match path.extension() {
+                            Some(ext) => match ext.to_str() {
+                                Some(ext) => ext,
+                                None => {
+                                    error!("File `{}` has no valid extension", path.display());
+                                    continue;
+                                }
+                            },
+                            None => {
+                                error!("File `{}` has no valid extension", path.display());
+                                continue;
+                            }
+                        };
 
                         if extension == DataFileType::Grammar.as_ext() {
                             let file_stem = path.file_stem().unwrap().to_str().unwrap();
 
                             let grammar_checkers =
                                 &msg.state.language_functions.grammar_suggestions;
-                            grammar_checkers.add(file_stem, path.into());
+                            grammar_checkers.add(file_stem, path.to_str().unwrap());
                         }
 
-                        info!("Create Event {:?} for file {}", &event, &extension)
+                        info!("Event {:?} for file {}", &event, &extension)
                     }
                     DebouncedEvent::Remove(path) => {
-                        let extension = path.extension().unwrap().to_str().unwrap();
+                        let extension = match path.extension() {
+                            Some(ext) => match ext.to_str() {
+                                Some(ext) => ext,
+                                None => {
+                                    error!("File `{}` has no valid extension", path.display());
+                                    continue;
+                                }
+                            },
+                            None => {
+                                error!("File `{}` has no valid extension", path.display());
+                                continue;
+                            }
+                        };
 
                         if extension == DataFileType::Grammar.as_ext() {
                             let file_stem = path.file_stem().unwrap().to_str().unwrap();
@@ -63,11 +87,11 @@ impl Handler<Start> for Watcher {
                             grammar_checkers.remove(file_stem);
                         }
 
-                        info!("Create Event {:?} for file {}", &event, &extension)
+                        info!("Event {:?} for file {}", &event, &extension)
                     }
                     _ => info!("{:?}", &event),
                 },
-                Err(e) => error!("watch error: {:?}", e),
+                Err(e) => error!("Watch error: {:?}", e),
             }
         }
     }

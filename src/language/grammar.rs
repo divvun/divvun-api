@@ -1,13 +1,13 @@
 use std::collections::BTreeMap;
 use std::io::{BufRead, BufReader, Error, Write};
-use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use actix::prelude::*;
 use futures::future::{err, ok, Future};
 use hashbrown::HashMap;
 use log::{error, info};
+use parking_lot::RwLock;
 use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
 
@@ -95,14 +95,13 @@ impl Handler<Die> for GramcheckExecutor {
     type Result = ();
 
     fn handle(&mut self, _: Die, ctx: &mut Self::Context) -> Self::Result {
-        info!("handling die");
-
+        // This doesn't always seem to work on Linux and defunct children linger
         match self.0.kill() {
             Ok(_) => info!("Child killed"),
             Err(e) => error!("{}", e),
         };
 
-        info!("Death message received, stopping");
+        info!("Death message received, stopping actor");
         ctx.stop();
     }
 }
@@ -139,7 +138,7 @@ impl GrammarSuggestions for AsyncGramchecker {
         message: GramcheckRequest,
         language: &str,
     ) -> Box<Future<Item = GramcheckOutput, Error = ApiError>> {
-        let lock = self.gramcheckers.read().unwrap();
+        let lock = self.gramcheckers.read();
 
         let gramchecker = match lock.get(language) {
             Some(s) => s,
@@ -160,14 +159,15 @@ impl GrammarSuggestions for AsyncGramchecker {
         )
     }
 
-    fn add(&self, language: &str, path: PathBuf) -> Box<Future<Item = String, Error = ApiError>> {
-        let mut lock = self.gramcheckers.write().unwrap();
+    fn add(&self, language: &str, path: &str) -> Box<Future<Item = String, Error = ApiError>> {
+        let mut lock = self.gramcheckers.write();
 
         info!("adding gramchecker");
 
+        let gramchecker_path = path.to_owned();
         let gramchecker = actix::Supervisor::start_in_arbiter(&actix::Arbiter::new(), move |_| {
-            GramcheckExecutor::new(&path.to_str().unwrap())
-                .expect(&format!("not found: {}", path.display()))
+            GramcheckExecutor::new(&gramchecker_path)
+                .expect(&format!("not found: {}", &gramchecker_path))
         });
 
         lock.insert(language.to_owned(), gramchecker);
@@ -176,7 +176,7 @@ impl GrammarSuggestions for AsyncGramchecker {
     }
 
     fn remove(&self, language: &str) -> Box<Future<Item = String, Error = ApiError>> {
-        let mut lock = self.gramcheckers.write().unwrap();
+        let mut lock = self.gramcheckers.write();
 
         let gramchecker = match lock.remove(language) {
             Some(s) => s,
@@ -196,7 +196,7 @@ impl GrammarSuggestions for AsyncGramchecker {
             gramchecker
                 .send(Die)
                 .map_err(move |err| {
-                    let mut lock = cloned_gramcheckers.write().unwrap();
+                    let mut lock = cloned_gramcheckers.write();
                     lock.insert(owned_lang, gramchecker);
 
                     ApiError {
