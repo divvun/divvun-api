@@ -8,6 +8,7 @@ use notify::Watcher as _;
 use notify::{watcher, DebouncedEvent, RecursiveMode};
 
 use crate::language::data_files::{get_data_dir, DataFileType};
+use crate::language::grammar::list_preferences;
 use crate::server::state::State;
 
 pub struct Watcher;
@@ -58,12 +59,23 @@ impl Handler<Start> for Watcher {
 
                         if let Some(file_info) = get_file_info(path) {
                             if file_info.extension == DataFileType::Grammar.as_ext() {
+                                let preferences = match list_preferences(file_info.path) {
+                                    Ok(preferences) => preferences,
+                                    Err(e) => {
+                                        error!("Failed to retrieve grammar preferences for {}: {}, ignoring file", e, file_info.stem);
+                                        continue;
+                                    }
+                                };
+
                                 let grammar_checkers =
                                     &msg.state.language_functions.grammar_suggestions;
-                                grammar_checkers.add(file_info.stem, path.to_str().unwrap());
+                                grammar_checkers.add(file_info.stem, file_info.path);
+
+                                let prefs_lock = &mut msg.state.gramcheck_preferences.write();
+                                prefs_lock.insert(file_info.stem.to_owned(), preferences);
                             } else if file_info.extension == DataFileType::Spelling.as_ext() {
                                 let spellers = &msg.state.language_functions.spelling_suggestions;
-                                spellers.add(file_info.stem, path.to_str().unwrap());
+                                spellers.add(file_info.stem, file_info.path);
                             }
                         }
                     }
@@ -75,6 +87,9 @@ impl Handler<Start> for Watcher {
                                 let grammar_checkers =
                                     &msg.state.language_functions.grammar_suggestions;
                                 grammar_checkers.remove(file_info.stem);
+
+                                let prefs_lock = &mut msg.state.gramcheck_preferences.write();
+                                prefs_lock.remove(file_info.stem);
                             } else if file_info.extension == DataFileType::Spelling.as_ext() {
                                 let spellers = &msg.state.language_functions.spelling_suggestions;
                                 spellers.remove(file_info.stem);
@@ -86,16 +101,28 @@ impl Handler<Start> for Watcher {
 
                         if let Some(file_info) = get_file_info(path) {
                             if file_info.extension == DataFileType::Grammar.as_ext() {
+                                let preferences = match list_preferences(file_info.path) {
+                                    Ok(preferences) => preferences,
+                                    Err(e) => {
+                                        error!("Failed to retrieve grammar preferences for {}: {}, ignoring file", e, file_info.stem);
+                                        continue;
+                                    }
+                                };
+
                                 let grammar_checkers =
                                     &msg.state.language_functions.grammar_suggestions;
 
                                 grammar_checkers.remove(file_info.stem);
-                                grammar_checkers.add(file_info.stem, path.to_str().unwrap());
+                                grammar_checkers.add(file_info.stem, file_info.path);
+
+                                let prefs_lock = &mut msg.state.gramcheck_preferences.write();
+                                prefs_lock.remove(file_info.stem);
+                                prefs_lock.insert(file_info.stem.to_owned(), preferences);
                             } else if file_info.extension == DataFileType::Spelling.as_ext() {
                                 let spellers = &msg.state.language_functions.spelling_suggestions;
 
                                 spellers.remove(file_info.stem);
-                                spellers.add(file_info.stem, path.to_str().unwrap());
+                                spellers.add(file_info.stem, file_info.path);
                             }
                         }
                     }
@@ -108,26 +135,48 @@ impl Handler<Start> for Watcher {
 }
 
 struct FileInfo<'a> {
+    pub path: &'a str,
     pub extension: &'a str,
     pub stem: &'a str,
 }
 
-fn get_file_info(path: &PathBuf) -> Option<FileInfo> {
-    let extension = match path.extension().and_then(|e| e.to_str()) {
-        Some(ext) => ext,
+fn get_file_info(original_path: &PathBuf) -> Option<FileInfo> {
+    let path = match original_path.to_str() {
+        Some(path) => path,
         None => {
-            warn!("File `{}` has no valid extension, skipping", path.display());
+            error!(
+                "Path failed to convert to string: {}",
+                original_path.display()
+            );
             return None;
         }
     };
 
-    let stem = match path.file_stem().and_then(|e| e.to_str()) {
+    let extension = match original_path.extension().and_then(|e| e.to_str()) {
         Some(ext) => ext,
         None => {
-            warn!("File `{}` has no valid name, skipping", path.display());
+            warn!(
+                "File `{}` has no valid extension, skipping",
+                original_path.display()
+            );
             return None;
         }
     };
 
-    return Some(FileInfo { extension, stem });
+    let stem = match original_path.file_stem().and_then(|e| e.to_str()) {
+        Some(ext) => ext,
+        None => {
+            warn!(
+                "File `{}` has no valid name, skipping",
+                original_path.display()
+            );
+            return None;
+        }
+    };
+
+    return Some(FileInfo {
+        path,
+        extension,
+        stem,
+    });
 }

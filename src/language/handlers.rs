@@ -30,7 +30,8 @@ pub fn get_gramcheck_preferences_handler(
     let prefs = &state.gramcheck_preferences;
     let language = path;
 
-    let error_tags = match prefs.get(&*language) {
+    let lock = prefs.read();
+    let error_tags = match lock.get(&*language) {
         Some(s) => s,
         None => {
             return result(Ok(HttpResponse::InternalServerError().into()));

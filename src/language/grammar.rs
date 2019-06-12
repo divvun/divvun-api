@@ -177,9 +177,9 @@ impl GrammarSuggestions for AsyncGramchecker {
         message: GramcheckRequest,
         language: &str,
     ) -> Box<Future<Item = GramcheckOutput, Error = ApiError>> {
-        let lock = self.gramcheckers.read();
+        let gramcheckers = self.gramcheckers.read();
 
-        let gramchecker = match lock.get(language) {
+        let gramchecker = match gramcheckers.get(language) {
             Some(s) => s,
             None => {
                 return Box::new(err(ApiError {
@@ -206,7 +206,7 @@ impl GrammarSuggestions for AsyncGramchecker {
     fn add(&self, language: &str, path: &str) -> Box<Future<Item = (), Error = ApiError>> {
         info!("Adding Grammar Checker for {}", language);
 
-        let mut lock = self.gramcheckers.write();
+        let mut gramcheckers = self.gramcheckers.write();
 
         let gramchecker_path = path.to_owned();
         let owned_language = language.to_owned();
@@ -215,7 +215,7 @@ impl GrammarSuggestions for AsyncGramchecker {
                 .expect(&format!("not found: {}", &gramchecker_path))
         });
 
-        lock.insert(language.to_owned(), gramchecker);
+        gramcheckers.insert(language.to_owned(), gramchecker);
 
         Box::new(ok(()))
     }
@@ -223,9 +223,9 @@ impl GrammarSuggestions for AsyncGramchecker {
     fn remove(&self, language: &str) -> Box<Future<Item = (), Error = ApiError>> {
         info!("Removing Grammar Checker for {}", language);
 
-        let mut lock = self.gramcheckers.write();
+        let mut gramcheckers = self.gramcheckers.write();
 
-        let gramchecker = match lock.remove(language) {
+        let gramchecker = match gramcheckers.remove(language) {
             Some(s) => s,
             None => {
                 return Box::new(err(ApiError {
@@ -242,8 +242,8 @@ impl GrammarSuggestions for AsyncGramchecker {
                 .send(Die)
                 .map_err(move |err| {
                     // Put the address back in since we failed to send the die message
-                    let mut lock = cloned_gramcheckers.write();
-                    lock.insert(language.clone(), gramchecker);
+                    let mut cloned_gramcheckers = cloned_gramcheckers.write();
+                    cloned_gramcheckers.insert(language.clone(), gramchecker);
 
                     ApiError {
                         message: format!(

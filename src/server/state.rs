@@ -84,7 +84,7 @@ pub type State = Arc<InnerState>;
 pub struct InnerState {
     pub graphql_schema: Schema,
     pub language_functions: LanguageFunctions,
-    pub gramcheck_preferences: HashMap<String, BTreeMap<String, String>>,
+    pub gramcheck_preferences: Arc<RwLock<HashMap<String, BTreeMap<String, String>>>>,
 }
 
 pub fn create_state() -> State {
@@ -99,7 +99,9 @@ pub fn create_state() -> State {
             spelling_suggestions: Box::new(get_speller()),
             grammar_suggestions: Box::new(get_gramchecker(&grammar_data_files)),
         },
-        gramcheck_preferences: get_gramcheck_preferences(&grammar_data_files),
+        gramcheck_preferences: Arc::new(RwLock::new(get_gramcheck_preferences(
+            &grammar_data_files,
+        ))),
     })
 }
 
