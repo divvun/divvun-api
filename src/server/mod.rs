@@ -9,8 +9,8 @@ use crate::config::Config;
 use crate::graphql::handlers::{graphiql, graphql};
 
 use crate::language::handlers::{
-    get_available_languages_handler, get_gramcheck_preferences_handler, gramchecker_die_handler,
-    gramchecker_handler, speller_handler,
+    get_available_languages_handler, get_gramcheck_preferences_handler, gramchecker_handler,
+    speller_handler,
 };
 
 pub fn start_server(state: State, config: &Config) {
@@ -37,10 +37,6 @@ pub fn start_server(state: State, config: &Config) {
             .service(
                 web::resource("/grammar/{languageCode}")
                     .route(web::post().to_async(gramchecker_handler)),
-            )
-            .service(
-                web::resource("/grammar/{languageCode}/die")
-                    .route(web::post().to_async(gramchecker_die_handler)),
             )
             .service(
                 web::resource("/preferences/grammar/{languageCode}")

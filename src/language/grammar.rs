@@ -6,7 +6,7 @@ use std::sync::Arc;
 use actix::prelude::*;
 use futures::future::{err, ok, Future};
 use hashbrown::HashMap;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use parking_lot::RwLock;
 use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
@@ -37,10 +37,10 @@ impl GramcheckExecutor {
             Ok(_) => {
                 // This blocks and may cause issues if the child doesn't properly die
                 match self.child.wait() {
-                    Ok(_) => info!("Child killed"),
-                    Err(e) => error!("Failed to kill child: {}", e),
+                    Ok(_) => debug!("Child killed"),
+                    Err(e) => error!("Failed to kill child: {} while waiting", e),
                 }
-            },
+            }
             Err(e) => error!("Failed to kill child: {}", e),
         };
     }
@@ -56,12 +56,6 @@ fn start_divvun_checker(data_file_path: &str) -> Result<Child, Error> {
         .spawn()?;
 
     Ok(process)
-}
-
-impl Drop for GramcheckExecutor {
-    fn drop(&mut self) {
-        info!("Dropping GramcheckExecutor for language `{}`", &self.language);
-    }
 }
 
 impl Actor for GramcheckExecutor {
@@ -83,8 +77,6 @@ impl Supervised for GramcheckExecutor {
                     panic!(e)
                 }
             }
-        } else {
-            warn!("Attempting to restart terminated actor for language `{}`", &self.language);
         }
     }
 }
@@ -102,8 +94,6 @@ impl Handler<GramcheckRequest> for GramcheckExecutor {
     type Result = Result<GramcheckOutput, ApiError>;
 
     fn handle(&mut self, msg: GramcheckRequest, _: &mut Self::Context) -> Self::Result {
-        info!("handling grammar");
-
         let stdin = self.child.stdin.as_mut().expect("Failed to open stdin");
         let mut stdout = BufReader::new(self.child.stdout.as_mut().expect("stdout to not be dead"));
 
@@ -142,14 +132,15 @@ impl Handler<Die> for GramcheckExecutor {
     fn handle(&mut self, _: Die, ctx: &mut Self::Context) -> Self::Result {
         self.kill_child();
 
-        info!(
+        debug!(
             "Death message received, stopping actor for language `{}`",
             &self.language
         );
 
         self.terminated = true;
 
-        // The actor will restart because it's supervised, but it should be dropped shortly after
+        // The actor will restart because it's supervised, but if no references remain
+        // to the actor it will be dropped
         ctx.stop();
     }
 }
@@ -192,25 +183,30 @@ impl GrammarSuggestions for AsyncGramchecker {
             Some(s) => s,
             None => {
                 return Box::new(err(ApiError {
-                    message: "No grammar checker available for that language".to_owned(),
+                    message: format!("No grammar checker available for language {}", &language),
                 }));
             }
         };
 
+        let language = language.to_owned();
+
         Box::new(
             gramchecker
                 .send(message)
-                .map_err(|err| ApiError {
-                    message: format!("Something failed in the message delivery process: {}", err),
+                .map_err(move |err| ApiError {
+                    message: format!(
+                        "Something failed in the message delivery process for language {}: {}",
+                        &language, err
+                    ),
                 })
                 .unhoist(),
         )
     }
 
-    fn add(&self, language: &str, path: &str) -> Box<Future<Item = String, Error = ApiError>> {
-        let mut lock = self.gramcheckers.write();
+    fn add(&self, language: &str, path: &str) -> Box<Future<Item = (), Error = ApiError>> {
+        info!("Adding Grammar Checker for {}", language);
 
-        info!("Adding gramchecker for {}", language);
+        let mut lock = self.gramcheckers.write();
 
         let gramchecker_path = path.to_owned();
         let owned_language = language.to_owned();
@@ -221,41 +217,42 @@ impl GrammarSuggestions for AsyncGramchecker {
 
         lock.insert(language.to_owned(), gramchecker);
 
-        Box::new(ok("blar".to_owned()))
+        Box::new(ok(()))
     }
 
-    fn remove(&self, language: &str) -> Box<Future<Item = String, Error = ApiError>> {
+    fn remove(&self, language: &str) -> Box<Future<Item = (), Error = ApiError>> {
+        info!("Removing Grammar Checker for {}", language);
+
         let mut lock = self.gramcheckers.write();
 
         let gramchecker = match lock.remove(language) {
             Some(s) => s,
             None => {
                 return Box::new(err(ApiError {
-                    message: "No grammar checker available for that language".to_owned(),
+                    message: format!("No grammar checker available for language {}", &language),
                 }));
             }
         };
 
-        info!("Killing gramchecker for {}", language);
-
         let cloned_gramcheckers = Arc::clone(&self.gramcheckers);
-        let owned_lang = language.to_owned();
+        let language = language.to_owned();
 
         Box::new(
             gramchecker
                 .send(Die)
                 .map_err(move |err| {
+                    // Put the address back in since we failed to send the die message
                     let mut lock = cloned_gramcheckers.write();
-                    lock.insert(owned_lang, gramchecker);
+                    lock.insert(language.clone(), gramchecker);
 
                     ApiError {
                         message: format!(
-                            "Something failed in the message delivery process: {}",
-                            err
+                            "Something failed in the message delivery process for language {}: {}",
+                            &language, err
                         ),
                     }
                 })
-                .and_then(|_| ok("blar".to_owned())),
+                .and_then(|_| ok(())),
         )
     }
 }

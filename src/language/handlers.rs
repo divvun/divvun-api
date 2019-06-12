@@ -55,18 +55,6 @@ pub fn gramchecker_handler(
         .map(|res| HttpResponse::Ok().json(res))
 }
 
-pub fn gramchecker_die_handler(
-    path: web::Path<String>,
-    state: web::Data<State>,
-) -> impl Future<Item = HttpResponse, Error = actix_web::Error> {
-    let grammar_suggestions = &state.language_functions.grammar_suggestions;
-
-    grammar_suggestions
-        .remove(&path)
-        .from_err()
-        .map(|_| HttpResponse::Ok().finish())
-}
-
 pub fn speller_handler(
     body: web::Json<SpellerRequest>,
     path: web::Path<String>,

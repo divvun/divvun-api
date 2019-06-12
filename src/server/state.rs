@@ -7,6 +7,7 @@ use divvunspell::archive::SpellerArchive;
 use failure::Fail;
 use futures::future::{err, ok, Future};
 use hashbrown::HashMap;
+use log::error;
 use parking_lot::RwLock;
 use serde_derive::Serialize;
 
@@ -30,6 +31,7 @@ pub struct ApiError {
 
 impl ResponseError for ApiError {
     fn render_response(&self) -> HttpResponse {
+        error!("{}", self.message);
         return HttpResponse::InternalServerError()
             .content_type("application/json")
             .json(json!({ "message": self.message }));
@@ -47,6 +49,8 @@ pub trait SpellingSuggestions: Send + Sync {
         message: SpellerRequest,
         language: &str,
     ) -> Box<Future<Item = SpellerResponse, Error = ApiError>>;
+    fn add(&self, language: &str, path: &str) -> Box<Future<Item = (), Error = ApiError>>;
+    fn remove(&self, language: &str) -> Box<Future<Item = (), Error = ApiError>>;
 }
 
 pub trait GrammarSuggestions: Send + Sync {
@@ -55,8 +59,8 @@ pub trait GrammarSuggestions: Send + Sync {
         message: GramcheckRequest,
         language: &str,
     ) -> Box<Future<Item = GramcheckOutput, Error = ApiError>>;
-    fn add(&self, language: &str, path: &str) -> Box<Future<Item = String, Error = ApiError>>;
-    fn remove(&self, language: &str) -> Box<Future<Item = String, Error = ApiError>>;
+    fn add(&self, language: &str, path: &str) -> Box<Future<Item = (), Error = ApiError>>;
+    fn remove(&self, language: &str) -> Box<Future<Item = (), Error = ApiError>>;
 }
 
 pub trait UnhoistFutureExt<U, E> {
@@ -116,17 +120,24 @@ fn get_speller() -> AsyncSpeller {
 
             let speller_path = f.to_str().unwrap();
             let ar = SpellerArchive::new(speller_path);
+            let owned_language = lang_code.to_owned();
 
             (
                 lang_code.into(),
                 actix::Supervisor::start_in_arbiter(&actix::Arbiter::new(), |_| {
-                    DivvunSpellExecutor(ar.unwrap())
+                    DivvunSpellExecutor {
+                        speller_archive: ar.unwrap(),
+                        language: owned_language,
+                        terminated: false,
+                    }
                 }),
             )
         })
         .collect();
 
-    AsyncSpeller { spellers }
+    AsyncSpeller {
+        spellers: Arc::new(RwLock::new(spellers)),
+    }
 }
 
 fn get_gramchecker(grammar_data_files: &Vec<PathBuf>) -> AsyncGramchecker {
