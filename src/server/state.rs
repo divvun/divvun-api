@@ -39,8 +39,8 @@ impl ResponseError for ApiError {
 }
 
 pub struct LanguageFunctions {
-    pub spelling_suggestions: Box<SpellingSuggestions>,
-    pub grammar_suggestions: Box<GrammarSuggestions>,
+    pub spelling_suggestions: Box<dyn SpellingSuggestions>,
+    pub grammar_suggestions: Box<dyn GrammarSuggestions>,
 }
 
 pub trait SpellingSuggestions: Send + Sync {
@@ -48,9 +48,9 @@ pub trait SpellingSuggestions: Send + Sync {
         &self,
         message: SpellerRequest,
         language: &str,
-    ) -> Box<Future<Item = SpellerResponse, Error = ApiError>>;
-    fn add(&self, language: &str, path: &str) -> Box<Future<Item = (), Error = ApiError>>;
-    fn remove(&self, language: &str) -> Box<Future<Item = (), Error = ApiError>>;
+    ) -> Box<dyn Future<Item = SpellerResponse, Error = ApiError>>;
+    fn add(&self, language: &str, path: &str) -> Box<dyn Future<Item = (), Error = ApiError>>;
+    fn remove(&self, language: &str) -> Box<dyn Future<Item = (), Error = ApiError>>;
 }
 
 pub trait GrammarSuggestions: Send + Sync {
@@ -58,20 +58,20 @@ pub trait GrammarSuggestions: Send + Sync {
         &self,
         message: GramcheckRequest,
         language: &str,
-    ) -> Box<Future<Item = GramcheckOutput, Error = ApiError>>;
-    fn add(&self, language: &str, path: &str) -> Box<Future<Item = (), Error = ApiError>>;
-    fn remove(&self, language: &str) -> Box<Future<Item = (), Error = ApiError>>;
+    ) -> Box<dyn Future<Item = GramcheckOutput, Error = ApiError>>;
+    fn add(&self, language: &str, path: &str) -> Box<dyn Future<Item = (), Error = ApiError>>;
+    fn remove(&self, language: &str) -> Box<dyn Future<Item = (), Error = ApiError>>;
 }
 
 pub trait UnhoistFutureExt<U, E> {
-    fn unhoist(self) -> Box<Future<Item = U, Error = E>>;
+    fn unhoist(self) -> Box<dyn Future<Item = U, Error = E>>;
 }
 
 impl<T: 'static, U: 'static, E: 'static> UnhoistFutureExt<U, E> for T
 where
     T: Future<Item = Result<U, E>, Error = E>,
 {
-    fn unhoist(self) -> Box<Future<Item = U, Error = E>> {
+    fn unhoist(self) -> Box<dyn Future<Item = U, Error = E>> {
         Box::new(self.and_then(|res| match res {
             Ok(result) => ok(result),
             Err(e) => err(e),

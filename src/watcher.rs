@@ -140,7 +140,7 @@ struct FileInfo<'a> {
     pub stem: &'a str,
 }
 
-fn get_file_info(original_path: &PathBuf) -> Option<FileInfo> {
+fn get_file_info(original_path: &PathBuf) -> Option<FileInfo<'_>> {
     let path = match original_path.to_str() {
         Some(path) => path,
         None => {

@@ -176,7 +176,7 @@ impl GrammarSuggestions for AsyncGramchecker {
         &self,
         message: GramcheckRequest,
         language: &str,
-    ) -> Box<Future<Item = GramcheckOutput, Error = ApiError>> {
+    ) -> Box<dyn Future<Item = GramcheckOutput, Error = ApiError>> {
         let gramcheckers = self.gramcheckers.read();
 
         let gramchecker = match gramcheckers.get(language) {
@@ -203,7 +203,7 @@ impl GrammarSuggestions for AsyncGramchecker {
         )
     }
 
-    fn add(&self, language: &str, path: &str) -> Box<Future<Item = (), Error = ApiError>> {
+    fn add(&self, language: &str, path: &str) -> Box<dyn Future<Item = (), Error = ApiError>> {
         info!("Adding Grammar Checker for {}", language);
 
         let mut gramcheckers = self.gramcheckers.write();
@@ -220,7 +220,7 @@ impl GrammarSuggestions for AsyncGramchecker {
         Box::new(ok(()))
     }
 
-    fn remove(&self, language: &str) -> Box<Future<Item = (), Error = ApiError>> {
+    fn remove(&self, language: &str) -> Box<dyn Future<Item = (), Error = ApiError>> {
         info!("Removing Grammar Checker for {}", language);
 
         let mut gramcheckers = self.gramcheckers.write();

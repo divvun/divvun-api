@@ -48,7 +48,7 @@ fn main() {
     system.run().unwrap();
 }
 
-fn get_config(matches: &ArgMatches) -> Config {
+fn get_config(matches: &ArgMatches<'_>) -> Config {
     let default_path = "config.toml";
     let divvun_env_var = "DIVVUN_API_CONFIG_PATH";
 

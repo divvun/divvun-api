@@ -100,7 +100,7 @@ impl SpellingSuggestions for AsyncSpeller {
         &self,
         message: SpellerRequest,
         language: &str,
-    ) -> Box<Future<Item = SpellerResponse, Error = ApiError>> {
+    ) -> Box<dyn Future<Item = SpellerResponse, Error = ApiError>> {
         let lock = self.spellers.read();
 
         let speller = match lock.get(language) {
@@ -127,7 +127,7 @@ impl SpellingSuggestions for AsyncSpeller {
         )
     }
 
-    fn add(&self, language: &str, path: &str) -> Box<Future<Item = (), Error = ApiError>> {
+    fn add(&self, language: &str, path: &str) -> Box<dyn Future<Item = (), Error = ApiError>> {
         info!("Adding Speller for {}", language);
 
         let mut lock = self.spellers.write();
@@ -149,7 +149,7 @@ impl SpellingSuggestions for AsyncSpeller {
         Box::new(ok(()))
     }
 
-    fn remove(&self, language: &str) -> Box<Future<Item = (), Error = ApiError>> {
+    fn remove(&self, language: &str) -> Box<dyn Future<Item = (), Error = ApiError>> {
         info!("Removing Speller for {}", language);
 
         let mut lock = self.spellers.write();
