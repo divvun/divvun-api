@@ -3,16 +3,10 @@ use std::{env, fs};
 use clap::{crate_version, App, Arg, ArgMatches};
 use log::info;
 
-mod config;
-mod graphql;
-mod language;
-mod server;
-mod watcher;
-
-use config::Config;
-use server::start_server;
-use server::state::create_state;
-use watcher::{Start, Watcher};
+use divvun_api::config::Config;
+use divvun_api::server::start_server;
+use divvun_api::server::state::create_state;
+use divvun_api::watcher::{Start, Watcher};
 
 fn main() {
     env::set_var("RUST_LOG", "info");
