@@ -30,3 +30,10 @@ csv = "1.0.5"
 clap = "2.33.0"
 notify = "4.0.12"
 parking_lot = "0.8.0"
+
+[[test]]
+name = "cucumber"
+harness = false # Allows Cucumber to print output instead of libtest
+
+[dev-dependencies]
+cucumber_rust = { version = "^0.5.1", default-features = false }
