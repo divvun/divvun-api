@@ -1,6 +1,7 @@
 use std::env;
 
 use actix_web::{http::header, middleware, middleware::cors::Cors, web, App, HttpServer};
+use actix_web::dev::Server;
 
 pub mod state;
 
@@ -13,7 +14,7 @@ use crate::language::handlers::{
     speller_handler,
 };
 
-pub fn start_server(state: State, config: &Config) {
+pub fn start_server(state: State, config: &Config) -> Server {
     env::set_var("RUST_BACKTRACE", "1");
 
     HttpServer::new(move || {
@@ -49,5 +50,5 @@ pub fn start_server(state: State, config: &Config) {
     .workers(4)
     .bind(&config.addr)
     .unwrap()
-    .start();
+    .start()
 }

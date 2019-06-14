@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate cucumber_rust;
 
+use std::thread;
+
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
     foo: String
@@ -21,6 +23,8 @@ mod example_steps {
     // Any type that implements cucumber_rust::World + Default can be the world
     steps!(crate::MyWorld => {
         given "I am trying out Cucumber" |world, _step| {
+            
+
             world.foo = "Some string".to_string();
             // Set up your context in given steps
         };
@@ -72,7 +76,13 @@ after!(an_after_fn => |_scenario| {
 });
 
 // A setup function to be called before everything else
-fn setup() {}
+fn setup() {
+    use divvun_api::init::init;
+
+    thread::spawn(move || {
+        init();
+    });
+}
 
 cucumber! {
     features: "./features", // Path to our feature files
