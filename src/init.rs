@@ -37,7 +37,7 @@ pub fn init() {
     addr.try_send(Start {
         state: watcher_state,
     })
-        .unwrap();
+    .unwrap();
 
     system.run().unwrap();
 }
@@ -65,7 +65,7 @@ fn get_config(matches: &ArgMatches<'_>) -> Config {
                 default_path
             }
         }
-            .to_owned(),
+        .to_owned(),
     };
 
     let config =

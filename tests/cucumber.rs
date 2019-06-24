@@ -1,20 +1,23 @@
 #[macro_use]
 extern crate cucumber_rust;
 
-use std::thread;
+#[macro_use]
+extern crate serde_json;
+
+use std::{thread, time};
 
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
-    foo: String
+    json: serde_json::Value,
 }
 
 impl cucumber_rust::World for MyWorld {}
 
-impl std::default::Default for MyWorld {
+impl Default for MyWorld {
     fn default() -> MyWorld {
         // This function is called every time a new scenario is started
         MyWorld {
-            foo: "a default string".to_string()
+            json: json!(""),
         }
     }
 }
@@ -22,45 +25,17 @@ impl std::default::Default for MyWorld {
 mod example_steps {
     // Any type that implements cucumber_rust::World + Default can be the world
     steps!(crate::MyWorld => {
-        given "I am trying out Cucumber" |world, _step| {
-            
+        given "I have loaded `se` grammar and speller files" |_world, _step| { };
 
-            world.foo = "Some string".to_string();
-            // Set up your context in given steps
+        when "I go to the endpoint `/languages`" |world, _step| {
+            // TODO: pull from toml
+            let body = reqwest::get("http://127.0.0.1:8080/languages").unwrap().json().unwrap();
+
+            world.json = body;
         };
 
-        when "I consider what I am doing" |world, _step| {
-            // Take actions
-            let new_string = format!("{}.", &world.foo);
-            world.foo = new_string;
-        };
-
-        then "I am interested in ATDD" |world, _step| {
-            // Check that the outcomes to be observed have occurred
-            assert_eq!(world.foo, "Some string.");
-        };
-
-        then regex r"^we can (.*) rules with regex$" |_world, matches, _step| {
-            // And access them as an array
-            assert_eq!(matches[1], "implement");
-        };
-
-        then regex r"^we can also match (\d+) (.+) types$" (usize, String) |_world, num, word, _step| {
-            // `num` will be of type usize, `word` of type String
-            assert_eq!(num, 42);
-            assert_eq!(word, "olika");
-        };
-
-        then "we can use data tables to provide more parameters" |_world, step| {
-            let table = step.table().unwrap().clone();
-
-            assert_eq!(table.header, vec!["key", "value"]);
-
-            let expected_keys = table.rows.iter().map(|row| row[0].to_owned()).collect::<Vec<_>>();
-            let expected_values = table.rows.iter().map(|row| row[1].to_owned()).collect::<Vec<_>>();
-
-            assert_eq!(expected_keys, vec!["a", "b"]);
-            assert_eq!(expected_values, vec!["fizz", "buzz"]);
+        then "I get back a JSON object with available languages and their titles" |world, _step| {
+            assert_eq!(&world.json, &json!({"available":{"grammar":{"se": "davvisámegiella"},"speller":{"se":"davvisámegiella"}}}));
         };
     });
 }
@@ -82,6 +57,9 @@ fn setup() {
     thread::spawn(move || {
         init();
     });
+
+    // Sleep for a bit so the server can start before tests are ran
+    thread::sleep(time::Duration::from_secs(3));
 }
 
 cucumber! {

@@ -1,7 +1,6 @@
-Feature: Example feature
+Feature: divvun-api
 
-  Scenario: An example scenario
-    Given I am trying out Cucumber
-    When I consider what I am doing
-    Then I am interested in ATDD
-    And we can implement rules with regex
+  Scenario: Retrieving available languages
+    Given I have loaded `se` grammar and speller files
+    When I go to the endpoint `/languages`
+    Then I get back a JSON object with available languages and their titles
