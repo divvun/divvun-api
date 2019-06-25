@@ -8,7 +8,7 @@ use crate::server::start_server;
 use crate::server::state::create_state;
 use crate::watcher::{Start, Watcher};
 
-pub fn init() {
+pub fn init_config() -> Config {
     env::set_var("RUST_LOG", "info");
     env_logger::init();
 
@@ -24,13 +24,15 @@ pub fn init() {
         )
         .get_matches();
 
-    let config = get_config(&matches);
+    get_config(&matches)
+}
 
+pub fn init_system(config: &Config) {
     let system = actix::System::new("divvun-api");
     let state = create_state();
 
     let server_state = state.clone();
-    let server = start_server(server_state, &config);
+    let _server = start_server(server_state, &config);
 
     let watcher_state = state.clone();
     let addr = actix::SyncArbiter::start(1, move || Watcher);
@@ -40,10 +42,6 @@ pub fn init() {
     .unwrap();
 
     system.run().unwrap();
-}
-
-pub fn shut_down(system: actix::System, server: actix_web::dev::Server) {
-    system.stop();
 }
 
 fn get_config(matches: &ArgMatches<'_>) -> Config {

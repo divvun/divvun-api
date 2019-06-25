@@ -16,16 +16,13 @@ impl cucumber_rust::World for MyWorld {}
 impl Default for MyWorld {
     fn default() -> MyWorld {
         // This function is called every time a new scenario is started
-        MyWorld {
-            json: json!(""),
-        }
+        MyWorld { json: json!("") }
     }
 }
 
 mod example_steps {
     // Any type that implements cucumber_rust::World + Default can be the world
-    steps!(crate::MyWorld => {
-        given "I have loaded `se` grammar and speller files" |_world, _step| { };
+    steps!(crate::MyWorld => {        given "I have loaded `se` grammar and speller files" |_world, _step| { };
 
         when "I go to the endpoint `/languages`" |world, _step| {
             // TODO: pull from toml
@@ -52,10 +49,12 @@ after!(an_after_fn => |_scenario| {
 
 // A setup function to be called before everything else
 fn setup() {
-    use divvun_api::init::init;
+    use divvun_api::init::{init_config, init_system};
 
     thread::spawn(move || {
-        init();
+        let config = init_config();
+
+        init_system(&config);
     });
 
     // Sleep for a bit so the server can start before tests are ran

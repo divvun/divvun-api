@@ -1,5 +1,7 @@
-use divvun_api::init::init;
+use divvun_api::init::{init_config, init_system};
 
 fn main() {
-    init();
+    let config = init_config();
+
+    init_system(&config);
 }
