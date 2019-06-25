@@ -10,10 +10,15 @@ use super::data_files::{
 use super::grammar::{GramcheckPreferencesResponse, GramcheckRequest};
 use super::speller::SpellerRequest;
 
-pub fn get_available_languages_handler() -> actix_web::Result<web::Json<AvailableLanguagesResponse>>
-{
-    let grammar_checker_langs = available_languages(DataFileType::Grammar);
-    let spell_checker_langs = available_languages(DataFileType::Spelling);
+pub fn get_available_languages_handler(
+    state: web::Data<State>,
+) -> actix_web::Result<web::Json<AvailableLanguagesResponse>> {
+    let config = &state.config;
+
+    let grammar_checker_langs =
+        available_languages(config.data_file_dir.as_path(), DataFileType::Grammar);
+    let spell_checker_langs =
+        available_languages(config.data_file_dir.as_path(), DataFileType::Spelling);
 
     Ok(web::Json(AvailableLanguagesResponse {
         available: AvailableLanguagesByType {

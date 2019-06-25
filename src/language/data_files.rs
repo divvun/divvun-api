@@ -1,10 +1,9 @@
 use std::collections::HashMap;
 use std::fs;
 use std::io::{Error, ErrorKind};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use csv;
-use directories::ProjectDirs;
 use serde_derive::Serialize;
 
 #[derive(Clone, Copy)]
@@ -40,13 +39,16 @@ impl DataFileType {
     }
 }
 
-pub fn available_languages(data_type: DataFileType) -> HashMap<String, String> {
+pub fn available_languages(
+    data_file_dir: &Path,
+    data_type: DataFileType,
+) -> HashMap<String, String> {
     let autonyms_tsv = include_str!("../../assets/iso639-autonyms.tsv");
     let mut reader = csv::ReaderBuilder::new()
         .delimiter(b'\t')
         .from_reader(autonyms_tsv.as_bytes());
 
-    let lang_data_files = match get_data_files(data_type) {
+    let lang_data_files = match get_data_files(data_file_dir, data_type) {
         Ok(v) => v,
         Err(_) => Vec::new(),
     };
@@ -78,8 +80,11 @@ pub fn available_languages(data_type: DataFileType) -> HashMap<String, String> {
     result
 }
 
-pub fn get_data_files(data_type: DataFileType) -> std::io::Result<Vec<PathBuf>> {
-    let dir = get_data_dir(data_type);
+pub fn get_data_files(
+    data_file_dir: &Path,
+    data_type: DataFileType,
+) -> std::io::Result<Vec<PathBuf>> {
+    let dir = get_typed_data_dir(data_file_dir, data_type);
 
     let extension = data_type.as_ext();
 
@@ -94,11 +99,6 @@ pub fn get_data_files(data_type: DataFileType) -> std::io::Result<Vec<PathBuf>> 
     Ok(paths)
 }
 
-pub fn get_data_dir(data_type: DataFileType) -> PathBuf {
-    let data_dir = match ProjectDirs::from("no", "uit", "api-giellalt") {
-        Some(v) => v.data_dir().to_owned(),
-        None => PathBuf::from("./"),
-    };
-
-    data_dir.join(data_type.as_dir())
+pub fn get_typed_data_dir(data_file_dir: &Path, data_type: DataFileType) -> PathBuf {
+    data_file_dir.join(data_type.as_dir())
 }

@@ -12,13 +12,11 @@ fn main() {
         addr: toml_config.addr,
         data_file_dir: match toml_config.data_file_dir {
             Some(dir) => dir,
-            None => {
-                match ProjectDirs::from("no", "uit", "api-giellalt") {
-                    Some(v) => v.data_dir().to_owned(),
-                    None => PathBuf::from("./"),
-                }
-            }
-        }
+            None => match ProjectDirs::from("no", "uit", "api-giellalt") {
+                Some(v) => v.data_dir().to_owned(),
+                None => PathBuf::from("./"),
+            },
+        },
     };
 
     init_system(&config);

@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use actix_web::error::ResponseError;
@@ -10,7 +11,9 @@ use hashbrown::HashMap;
 use log::error;
 use parking_lot::RwLock;
 use serde_derive::Serialize;
+use serde_json::json;
 
+use crate::config::Config;
 use crate::graphql::schema::create_schema;
 use crate::graphql::schema::Schema;
 use crate::language::data_files::{get_data_files, DataFileType};
@@ -20,8 +23,6 @@ use crate::language::grammar::{
 use crate::language::speller::{
     AsyncSpeller, DivvunSpellExecutor, SpellerRequest, SpellerResponse,
 };
-use serde_json::json;
-use std::path::PathBuf;
 
 #[derive(Fail, Debug, Serialize)]
 #[fail(display = "api error")]
@@ -82,21 +83,24 @@ where
 pub type State = Arc<InnerState>;
 
 pub struct InnerState {
+    pub config: Config,
     pub graphql_schema: Schema,
     pub language_functions: LanguageFunctions,
     pub gramcheck_preferences: Arc<RwLock<HashMap<String, BTreeMap<String, String>>>>,
 }
 
-pub fn create_state() -> State {
-    let grammar_data_files = get_data_files(DataFileType::Grammar).unwrap_or_else(|e| {
-        eprintln!("Error getting grammar data files: {}", e);
-        vec![]
-    });
+pub fn create_state(config: &Config) -> State {
+    let grammar_data_files = get_data_files(config.data_file_dir.as_path(), DataFileType::Grammar)
+        .unwrap_or_else(|e| {
+            eprintln!("Error getting grammar data files: {}", e);
+            vec![]
+        });
 
     Arc::new(InnerState {
+        config: config.clone(),
         graphql_schema: create_schema(),
         language_functions: LanguageFunctions {
-            spelling_suggestions: Box::new(get_speller()),
+            spelling_suggestions: Box::new(get_speller(config)),
             grammar_suggestions: Box::new(get_gramchecker(&grammar_data_files)),
         },
         gramcheck_preferences: Arc::new(RwLock::new(get_gramcheck_preferences(
@@ -105,11 +109,14 @@ pub fn create_state() -> State {
     })
 }
 
-fn get_speller() -> AsyncSpeller {
-    let spelling_data_files = get_data_files(DataFileType::Spelling).unwrap_or_else(|e| {
-        eprintln!("Error getting spelling data files: {}", e);
-        vec![]
-    });
+fn get_speller(config: &Config) -> AsyncSpeller {
+    let spelling_data_files =
+        get_data_files(config.data_file_dir.as_path(), DataFileType::Spelling).unwrap_or_else(
+            |e| {
+                eprintln!("Error getting spelling data files: {}", e);
+                vec![]
+            },
+        );
 
     let spellers = spelling_data_files
         .into_iter()

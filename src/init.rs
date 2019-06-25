@@ -3,7 +3,7 @@ use std::{env, fs};
 use clap::{crate_version, App, Arg, ArgMatches};
 use log::info;
 
-use crate::config::{TomlConfig, Config};
+use crate::config::{Config, TomlConfig};
 use crate::server::start_server;
 use crate::server::state::create_state;
 use crate::watcher::{Start, Watcher};
@@ -29,7 +29,7 @@ pub fn init_config() -> TomlConfig {
 
 pub fn init_system(config: &Config) {
     let system = actix::System::new("divvun-api");
-    let state = create_state();
+    let state = create_state(&config);
 
     let server_state = state.clone();
     let _server = start_server(server_state, &config);

@@ -8,11 +8,10 @@ For personal development and testing.
 
 ### Prerequisites
 
-- nightly Rust
 - development package of OpenSSL
 - `divvun-checker` from https://github.com/divvun/libdivvun
 
-Language files need to be placed in these folders:
+For development, language files need to be placed in these folders:
 
 Linux: `/home/<username>/.local/share/api-giellalt`
 
@@ -21,6 +20,13 @@ Mac OS: `/Users/<username>/Library/Application Support/no.uit.api-giellalt`
 Windows: `C:\Users\<username>\AppData\Local\uit\api-giellalt\data`
 
 Inside the folder place `.zcheck` files into `grammar/` and `.zhfst` files into `spelling/` folders.
+
+## Testing
+
+Tests use the files in tests/resources/data_files.
+
+- `divvun-checker` must be installed
+- run `cargo test`
 
 ## Deployment
 
