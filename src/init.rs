@@ -3,12 +3,12 @@ use std::{env, fs};
 use clap::{crate_version, App, Arg, ArgMatches};
 use log::info;
 
-use crate::config::Config;
+use crate::config::{TomlConfig, Config};
 use crate::server::start_server;
 use crate::server::state::create_state;
 use crate::watcher::{Start, Watcher};
 
-pub fn init_config() -> Config {
+pub fn init_config() -> TomlConfig {
     env::set_var("RUST_LOG", "info");
     env_logger::init();
 
@@ -44,7 +44,7 @@ pub fn init_system(config: &Config) {
     system.run().unwrap();
 }
 
-fn get_config(matches: &ArgMatches<'_>) -> Config {
+fn get_config(matches: &ArgMatches<'_>) -> TomlConfig {
     let default_path = "config.toml";
     let divvun_env_var = "DIVVUN_API_CONFIG_PATH";
 
@@ -68,7 +68,7 @@ fn get_config(matches: &ArgMatches<'_>) -> Config {
 
     let config =
         fs::read_to_string(&config_file).expect(&format!("Failed to open {}", config_file));
-    let config: Config =
+    let config: TomlConfig =
         toml::from_str(&config).expect(&format!("Failed to convert {} to TOML", config_file));
 
     config

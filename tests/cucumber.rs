@@ -5,6 +5,10 @@ extern crate cucumber_rust;
 extern crate serde_json;
 
 use std::{thread, time};
+use divvun_api::init::{init_config, init_system};
+use divvun_api::config::Config;
+use std::path::PathBuf;
+use std::env;
 
 pub struct MyWorld {
     // You can use this struct for mutable context in scenarios.
@@ -15,6 +19,24 @@ impl cucumber_rust::World for MyWorld {}
 
 impl Default for MyWorld {
     fn default() -> MyWorld {
+
+        thread::spawn(move || {
+            let toml_config = init_config();
+
+            let path = env::current_dir().unwrap();
+            println!("The current directory is {}", path.display());
+
+            let config = Config {
+                addr: toml_config.addr,
+                data_file_dir: PathBuf::from("tests/resources/data_files"),
+            };
+
+            init_system(&config);
+        });
+
+        // Sleep for a bit so the server can start before tests are ran
+        thread::sleep(time::Duration::from_secs(3));
+
         // This function is called every time a new scenario is started
         MyWorld { json: json!("") }
     }
@@ -48,18 +70,7 @@ after!(an_after_fn => |_scenario| {
 });
 
 // A setup function to be called before everything else
-fn setup() {
-    use divvun_api::init::{init_config, init_system};
-
-    thread::spawn(move || {
-        let config = init_config();
-
-        init_system(&config);
-    });
-
-    // Sleep for a bit so the server can start before tests are ran
-    thread::sleep(time::Duration::from_secs(3));
-}
+fn setup() { }
 
 cucumber! {
     features: "./features", // Path to our feature files
