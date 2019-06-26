@@ -1,18 +1,23 @@
 use std::{env, fs};
 
-use clap::{crate_version, App, Arg, ArgMatches};
+use clap::{crate_version, App as ClapApp, Arg, ArgMatches};
 use log::info;
+use actix::{Addr, SystemRunner};
+use actix_web::dev::Server;
 
 use crate::config::{Config, TomlConfig};
 use crate::server::start_server;
 use crate::server::state::create_state;
 use crate::watcher::{Start, Watcher};
 
-pub fn init_config() -> TomlConfig {
-    env::set_var("RUST_LOG", "info");
-    env_logger::init();
+pub struct App {
+    pub config: Config,
+    pub server: Server,
+    pub watcher: Addr<Watcher>,
+}
 
-    let matches = App::new("divvun-api")
+pub fn init_config() -> TomlConfig {
+    let matches = ClapApp::new("divvun-api")
         .version(crate_version!())
         .arg(
             Arg::with_name("config")
@@ -27,21 +32,25 @@ pub fn init_config() -> TomlConfig {
     get_config(&matches)
 }
 
-pub fn init_system(config: &Config) {
+pub fn init_system(config: &Config) -> (App, SystemRunner) {
     let system = actix::System::new("divvun-api");
     let state = create_state(&config);
 
     let server_state = state.clone();
-    let _server = start_server(server_state, &config);
+    let server = start_server(server_state, &config);
 
     let watcher_state = state.clone();
+
     let addr = actix::SyncArbiter::start(1, move || Watcher);
     addr.try_send(Start {
         state: watcher_state,
-    })
-    .unwrap();
+    }).unwrap();
 
-    system.run().unwrap();
+    (App {
+        config: config.clone(),
+        server,
+        watcher: addr,
+    }, system)
 }
 
 fn get_config(matches: &ArgMatches<'_>) -> TomlConfig {

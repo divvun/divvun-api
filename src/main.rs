@@ -1,11 +1,15 @@
 use divvun_api::init::{init_config, init_system};
 
+use std::env;
 use std::path::PathBuf;
 
 use directories::ProjectDirs;
 use divvun_api::config::Config;
 
 fn main() {
+    env::set_var("RUST_LOG", "info");
+    env_logger::init();
+
     let toml_config = init_config();
 
     let config = Config {
@@ -19,5 +23,7 @@ fn main() {
         },
     };
 
-    init_system(&config);
+    let (_app, system) = init_system(&config);
+
+    system.run().unwrap();
 }

@@ -34,7 +34,7 @@ pub struct SpellerRequest {
     pub word: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct SpellerResponse {
     pub word: String,
     pub is_correct: bool,
@@ -107,7 +107,7 @@ impl SpellingSuggestions for AsyncSpeller {
             Some(s) => s,
             None => {
                 return Box::new(err(ApiError {
-                    message: format!("No grammar checker available for language {}", &language),
+                    message: format!("No speller available for language {}", &language),
                 }));
             }
         };
@@ -158,7 +158,7 @@ impl SpellingSuggestions for AsyncSpeller {
             Some(s) => s,
             None => {
                 return Box::new(err(ApiError {
-                    message: format!("No grammar checker available for language {}", &language),
+                    message: format!("No speller available for language {}", &language),
                 }));
             }
         };

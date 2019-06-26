@@ -7,15 +7,18 @@ extern crate serde_json;
 use divvun_api::config::Config;
 use divvun_api::init::{init_config, init_system};
 
-use std::fs;
+use std::env;
 use std::path::PathBuf;
 use std::{thread, time};
+
+use divvun_api::language::speller::SpellerResponse;
 
 static TEST_DATA_FILES: &'static str = "tests/resources/data_files";
 
 pub struct MyWorld {
     config: Config,
     json: serde_json::Value,
+    speller_response: Option<SpellerResponse>,
 }
 
 impl cucumber_rust::World for MyWorld {}
@@ -29,38 +32,24 @@ impl Default for MyWorld {
             data_file_dir: PathBuf::from(TEST_DATA_FILES),
         };
 
-        let config_clone = config.clone();
-
-        thread::spawn(move || {
-            init_system(&config);
-        });
-
-        // Sleep for a bit so the server can start before tests are ran
-        thread::sleep(time::Duration::from_secs(1));
-
         // This function is called every time a new scenario is started
         MyWorld {
             json: json!(""),
-            config: config_clone,
+            config: config.clone(),
+            speller_response: None,
         }
     }
 }
 
 mod api_steps {
-    use std::fs;
+    use divvun_api::language::speller::SpellerResponse;
 
     steps!(crate::MyWorld => {
-        given "I have loaded `se` grammar and speller files" |world, _step| {
-            let data_file_dir = &world.config.data_file_dir;
+        given "I have loaded `se` grammar and speller files" |_world, _step| {
 
-            fs::copy(format!("{}/se.zhfst", data_file_dir.display()),
-                format!("{}/spelling/se.zhfst", data_file_dir.display())).unwrap();
-
-            fs::copy(format!("{}/se.zcheck", data_file_dir.display()),
-                format!("{}/grammar/se.zcheck", data_file_dir.display())).unwrap();
         };
 
-        when regex "I go to the endpoint `(.*)`" |world, matches, _step| {
+        when regex r"^I go to the endpoint `([^`]*)`$" |world, matches, _step| {
             let url = format!("http://{}{}", &world.config.addr, matches[1]);
             let body = reqwest::get(&url).unwrap().json().unwrap();
 
@@ -69,11 +58,24 @@ mod api_steps {
 
         then "I get back a JSON object with available languages and their titles" |world, _step| {
             assert_eq!(&world.json, &json!({"available":{"grammar":{"se": "davvisámegiella"},"speller":{"se":"davvisámegiella"}}}));
+        };
 
-            let data_file_dir = &world.config.data_file_dir;
+        when regex r"^I go to the endpoint `([^`]*)` with data$" |world, matches, _step| {
+            let url = format!("http://{}{}", &world.config.addr, matches[1]);
 
-            fs::remove_file(format!("{}/spelling/se.zhfst", data_file_dir.display())).unwrap();
-            fs::remove_file(format!("{}/grammar/se.zcheck", data_file_dir.display())).unwrap();
+            let client = reqwest::Client::new();
+
+            let response: SpellerResponse = client.post(&url).json(&json!({"word": "pákhat"})).send().unwrap().json().unwrap();
+            world.speller_response = Some(response);
+        };
+
+        then regex r"^I get back a JSON object with is_correct set to `([^`]*)` and some suggestions$" (bool) |world, is_correct, _step| {
+            let response = &world.speller_response.clone().unwrap();
+            assert_eq!(response.word, "pákhat");
+            assert_eq!(response.is_correct, is_correct);
+            assert_eq!(response.suggestions, vec![
+                "pakehat".to_owned(), "ákkat".to_owned(), "páhkat".to_owned(), "bákčat".to_owned(), "bákŋat".to_owned()
+                ]);
         };
     });
 }
@@ -90,27 +92,20 @@ after!(an_after_fn => |_scenario| {
 
 // A setup function to be called before everything else
 fn setup() {
-    match fs::metadata(format!("{}/se.zhfst", TEST_DATA_FILES)) {
-        Ok(_) => {}
-        Err(_e) => {
-            panic!(
-                "No file found at {}, make sure `se` files are placed in the {} folder",
-                format!("{}/se.zhfst", TEST_DATA_FILES),
-                TEST_DATA_FILES
-            );
-        }
+    env::set_var("RUST_LOG", "info");
+    env_logger::init();
+
+    let toml_config = init_config();
+
+    let config = Config {
+        addr: toml_config.addr,
+        data_file_dir: PathBuf::from(TEST_DATA_FILES),
     };
 
-    match fs::metadata(format!("{}/se.zcheck", TEST_DATA_FILES)) {
-        Ok(_) => (),
-        Err(_e) => {
-            panic!(
-                "No file found at {}, make sure `se` files are placed in the {} folder",
-                format!("{}/se.zcheck", TEST_DATA_FILES),
-                TEST_DATA_FILES
-            );
-        }
-    };
+    init_system(&config);
+
+    // Sleep for a bit so the server can start before tests are ran
+    thread::sleep(time::Duration::from_secs(2));
 }
 
 cucumber! {

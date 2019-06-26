@@ -23,7 +23,7 @@ Inside the folder place `.zcheck` files into `grammar/` and `.zhfst` files into 
 
 ## Testing
 
-Tests use the files in tests/resources/data_files.
+Tests use the files in tests/resources/data_files. The `se` files are expected to be present in the `speller` and `grammar` folders.
 
 - `divvun-checker` must be installed
 - run `cargo test`

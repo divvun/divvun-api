@@ -36,5 +36,5 @@ name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
-cucumber_rust = { version = "^0.5.1", default-features = false }
+cucumber_rust = { version = "^0.6", default-features = false }
 reqwest = "0.9.18"
