@@ -150,7 +150,7 @@ pub struct GramcheckPreferencesResponse {
     pub error_tags: BTreeMap<String, String>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct GramcheckErrResponse {
     pub error_text: String,
     pub start_index: u32,
@@ -161,7 +161,7 @@ pub struct GramcheckErrResponse {
     pub title: String,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct GramcheckOutput {
     pub text: String,
     pub errs: Vec<GramcheckErrResponse>,

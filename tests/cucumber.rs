@@ -4,14 +4,14 @@ extern crate cucumber_rust;
 #[macro_use]
 extern crate serde_json;
 
+use std::path::PathBuf;
+use std::{thread, time, env};
+
 use divvun_api::config::Config;
 use divvun_api::init::{init_config, init_system};
-
-use std::env;
-use std::path::PathBuf;
-use std::{thread, time};
-
 use divvun_api::language::speller::SpellerResponse;
+use divvun_api::language::grammar::GramcheckOutput;
+use divvun_api::server::state::ApiError;
 
 static TEST_DATA_FILES: &'static str = "tests/resources/data_files";
 
@@ -19,6 +19,8 @@ pub struct MyWorld {
     config: Config,
     json: serde_json::Value,
     speller_response: Option<SpellerResponse>,
+    grammar_response: Option<GramcheckOutput>,
+    api_error: Option<ApiError>,
 }
 
 impl cucumber_rust::World for MyWorld {}
@@ -37,16 +39,28 @@ impl Default for MyWorld {
             json: json!(""),
             config: config.clone(),
             speller_response: None,
+            grammar_response: None,
+            api_error: None,
         }
     }
 }
 
 mod api_steps {
     use divvun_api::language::speller::SpellerResponse;
+    use divvun_api::language::grammar::GramcheckOutput;
+    use divvun_api::server::state::ApiError;
 
     steps!(crate::MyWorld => {
-        given "I have loaded `se` grammar and speller files" |_world, _step| {
+        given "I have loaded `se` grammar and speller files" |world, _step| {
+            let grammar_file = "grammar/se.zcheck";
+            let mut dir_path = world.config.data_file_dir.clone();
+            dir_path.push(grammar_file);
+            assert_eq!(dir_path.exists(), true, "{} is not loaded", grammar_file);
 
+            let speller_file = "spelling/se.zhfst";
+            let mut dir_path = world.config.data_file_dir.clone();
+            dir_path.push(speller_file);
+            assert_eq!(dir_path.exists(), true, "{} is not loaded", speller_file);
         };
 
         when regex r"^I go to the endpoint `([^`]*)`$" |world, matches, _step| {
@@ -60,16 +74,26 @@ mod api_steps {
             assert_eq!(&world.json, &json!({"available":{"grammar":{"se": "davvisámegiella"},"speller":{"se":"davvisámegiella"}}}));
         };
 
-        when regex r"^I go to the endpoint `([^`]*)` with data$" |world, matches, _step| {
+        when regex r"^I go to the endpoint `([^`]*)` with appropriate data$" |world, matches, _step| {
+            let client = reqwest::Client::new();
             let url = format!("http://{}{}", &world.config.addr, matches[1]);
 
-            let client = reqwest::Client::new();
-
-            let response: SpellerResponse = client.post(&url).json(&json!({"word": "pákhat"})).send().unwrap().json().unwrap();
-            world.speller_response = Some(response);
+            match matches[1].as_str() {
+                "/speller/se" => {
+                    let response: SpellerResponse = client.post(&url).json(&json!({"word": "pákhat"})).send().unwrap().json().unwrap();
+                    world.speller_response = Some(response);
+                },
+                "/grammar/se" => {
+                    let response: GramcheckOutput = client.post(&url).json(&json!({"text": "sup  ney"})).send().unwrap().json().unwrap();
+                    world.grammar_response = Some(response);
+                },
+                _ => {
+                    panic!("Unsupported endpoint");
+                },
+            };
         };
 
-        then regex r"^I get back a JSON object with is_correct set to `([^`]*)` and some suggestions$" (bool) |world, is_correct, _step| {
+        then regex r"^I get back a SpellerResponse with is_correct set to `([^`]*)` and some suggestions$" (bool) |world, is_correct, _step| {
             let response = &world.speller_response.clone().unwrap();
             assert_eq!(response.word, "pákhat");
             assert_eq!(response.is_correct, is_correct);
@@ -77,18 +101,34 @@ mod api_steps {
                 "pakehat".to_owned(), "ákkat".to_owned(), "páhkat".to_owned(), "bákčat".to_owned(), "bákŋat".to_owned()
                 ]);
         };
+
+        then "I get back a GrammarOutput with the right values" |world, _step| {
+            let response = &world.grammar_response.clone().unwrap();
+            assert_eq!(response.text, "sup  ney");
+        };
+
+        when regex r"^I go to the endpoint `([^`]*)` for not loaded language$" (String) |world, endpoint, _step| {
+            let client = reqwest::Client::new();
+            let url = format!("http://{}{}", &world.config.addr, endpoint);
+
+            match endpoint.as_str() {
+                "/speller/en" => {
+                    let response: ApiError = client.post(&url).json(&json!({"word": "pákhat"})).send().unwrap().json().unwrap();
+                    //panic!("{:?}", response);
+                    world.api_error = Some(response);
+                },
+                _ => {
+                    panic!("Unsupported endpoint");
+                },
+            };
+        };
+
+        then regex r"^I get back an ApiError with the message `([^`]*)`$" (String) | world, message, _step | {
+            let error = &world.api_error.clone().unwrap();
+            assert_eq!(error.message, message);
+        };
     });
 }
-
-// Declares a before handler function named `a_before_fn`
-before!(a_before_fn => |_scenario| {
-
-});
-
-// Declares an after handler function named `an_after_fn`
-after!(an_after_fn => |_scenario| {
-
-});
 
 // A setup function to be called before everything else
 fn setup() {
@@ -115,10 +155,6 @@ cucumber! {
         api_steps::steps // the `steps!` macro creates a `steps` function in a module
     ],
     setup: setup, // Optional; called once before everything
-    before: &[
-        a_before_fn // Optional; called before each scenario
-    ],
-    after: &[
-        an_after_fn // Optional; called after each scenario
-    ]
+    before: &[],
+    after: &[]
 }

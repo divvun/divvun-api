@@ -10,7 +10,7 @@ use futures::future::{err, ok, Future};
 use hashbrown::HashMap;
 use log::error;
 use parking_lot::RwLock;
-use serde_derive::Serialize;
+use serde_derive::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::config::Config;
@@ -24,7 +24,7 @@ use crate::language::speller::{
     AsyncSpeller, DivvunSpellExecutor, SpellerRequest, SpellerResponse,
 };
 
-#[derive(Fail, Debug, Serialize)]
+#[derive(Fail, Debug, Deserialize, Serialize, Clone)]
 #[fail(display = "api error")]
 pub struct ApiError {
     pub message: String,

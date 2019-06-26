@@ -8,5 +8,13 @@ Feature: divvun-api
     Then I get back a JSON object with available languages and their titles
 
   Scenario: Checking spelling for `se` language
-    When I go to the endpoint `/speller/se` with data
-    Then I get back a JSON object with is_correct set to `false` and some suggestions
+    When I go to the endpoint `/speller/se` with appropriate data
+    Then I get back a SpellerResponse with is_correct set to `false` and some suggestions
+
+  Scenario: Checking grammar for `se` language
+    When I go to the endpoint `/grammar/se` with appropriate data
+    Then I get back a GrammarOutput with the right values
+
+  Scenario: Checking spelling for not loaded `en` language
+    When I go to the endpoint `/speller/en` for not loaded language
+    Then I get back an ApiError with the message `No speller available for language en`
