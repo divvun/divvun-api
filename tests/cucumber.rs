@@ -102,9 +102,26 @@ mod api_steps {
                 ]);
         };
 
-        then "I get back a GrammarOutput with the right values" |world, _step| {
+        then regex r"^I get back a GrammarOutput with `([^`]*)` and `([^`]*)` error codes$" (String, String) |world, code0, code1, _step| {
             let response = &world.grammar_response.clone().unwrap();
             assert_eq!(response.text, "sup  ney");
+
+            let errs = &response.errs;
+            assert_eq!(errs.len(), 2);
+
+            let err0 = &errs[0];
+            assert_eq!(err0.error_text, "sup  ney");
+            assert_eq!(err0.start_index, 0);
+            assert_eq!(err0.end_index, 8);
+            assert_eq!(err0.error_code, code0);
+            assert_eq!(err0.description, "Ii leat sátnelisttus");
+            assert_eq!(err0.title, "Čállinmeattáhusat");
+            assert_ne!(err0.suggestions.len(), 0);
+
+            let err1 = &errs[1];
+            assert_eq!(err1.error_code, code1);
+            assert_eq!(err1.title, "Sátnegaskameattáhusat");
+            assert_ne!(err1.suggestions.len(), 0);
         };
 
         when regex r"^I go to the endpoint `([^`]*)` for not loaded language$" (String) |world, endpoint, _step| {
@@ -114,18 +131,63 @@ mod api_steps {
             match endpoint.as_str() {
                 "/speller/en" => {
                     let response: ApiError = client.post(&url).json(&json!({"word": "pákhat"})).send().unwrap().json().unwrap();
-                    //panic!("{:?}", response);
                     world.api_error = Some(response);
                 },
+                "/grammar/en" => {
+                    let response: ApiError = client.post(&url).json(&json!({"text": "doesn't matter"})).send().unwrap().json().unwrap();
+                    world.api_error = Some(response);
+                }
                 _ => {
                     panic!("Unsupported endpoint");
                 },
             };
         };
 
-        then regex r"^I get back an ApiError with the message `([^`]*)`$" (String) | world, message, _step | {
+        then regex r"^I get back an ApiError with the message `([^`]*)`$" (String) |world, message, _step| {
             let error = &world.api_error.clone().unwrap();
             assert_eq!(error.message, message);
+        };
+
+        when regex r"^I go to the endpoint `([^`]*)` with an appropriate GraphQL query$" (String) |world, endpoint, _step| {
+            let client = reqwest::Client::new();
+            let url = format!("http://{}{}", &world.config.addr, endpoint);
+
+            let response: serde_json::value::Value = client.post(&url)
+                .json(&json!({
+                    "query": "query { suggestions(text: \"pákhat\", language: \"se\") {\
+                        speller { isCorrect suggestions }\
+                        grammar { errs { errorText errorCode description } }\
+                         } }"}))
+                .send().unwrap().json().unwrap();
+
+            world.json = response;
+        };
+
+        then "I get back a a JSON object with both a Speller and Grammar response" | world, _step | {
+            assert_eq!(json!({"data": {
+                "suggestions": {
+                  "grammar": {
+                    "errs": [
+                      {
+                        "errorText": "pákhat",
+                        "errorCode": "typo",
+                        "description": "Ii leat sátnelisttus",
+                      }
+                    ]
+                  },
+                  "speller": {
+                    "isCorrect": false,
+                    "suggestions": [
+                      "pakehat",
+                      "ákkat",
+                      "páhkat",
+                      "bákčat",
+                      "bákŋat"
+                    ]
+                  }
+                }
+              }
+            }), world.json.clone());
         };
     });
 }
@@ -145,7 +207,7 @@ fn setup() {
     init_system(&config);
 
     // Sleep for a bit so the server can start before tests are ran
-    thread::sleep(time::Duration::from_secs(2));
+    thread::sleep(time::Duration::from_secs(1));
 }
 
 cucumber! {

@@ -13,8 +13,16 @@ Feature: divvun-api
 
   Scenario: Checking grammar for `se` language
     When I go to the endpoint `/grammar/se` with appropriate data
-    Then I get back a GrammarOutput with the right values
+    Then I get back a GrammarOutput with `typo` and `double-space-before` error codes
 
   Scenario: Checking spelling for not loaded `en` language
     When I go to the endpoint `/speller/en` for not loaded language
     Then I get back an ApiError with the message `No speller available for language en`
+
+  Scenario: Checking grammar for not loaded `en` language
+    When I go to the endpoint `/grammar/en` for not loaded language
+    Then I get back an ApiError with the message `No grammar checker available for language en`
+
+  Scenario: Checking GraphQL response for `se` language
+    When I go to the endpoint `/graphql` with an appropriate GraphQL query
+    Then I get back a a JSON object with both a Speller and Grammar response
