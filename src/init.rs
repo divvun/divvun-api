@@ -1,9 +1,9 @@
 use std::{env, fs};
 
-use clap::{crate_version, App as ClapApp, Arg, ArgMatches};
-use log::info;
 use actix::{Addr, SystemRunner};
 use actix_web::dev::Server;
+use clap::{crate_version, App as ClapApp, Arg, ArgMatches};
+use log::info;
 
 use crate::config::{Config, TomlConfig};
 use crate::server::start_server;
@@ -44,13 +44,17 @@ pub fn init_system(config: &Config) -> (App, SystemRunner) {
     let addr = actix::SyncArbiter::start(1, move || Watcher);
     addr.try_send(Start {
         state: watcher_state,
-    }).unwrap();
+    })
+    .unwrap();
 
-    (App {
-        config: config.clone(),
-        server,
-        watcher: addr,
-    }, system)
+    (
+        App {
+            config: config.clone(),
+            server,
+            watcher: addr,
+        },
+        system,
+    )
 }
 
 fn get_config(matches: &ArgMatches<'_>) -> TomlConfig {

@@ -5,13 +5,16 @@ extern crate cucumber_rust;
 extern crate serde_json;
 
 use std::path::PathBuf;
-use std::{thread, time, env};
+use std::{env, thread, time};
 
 use divvun_api::config::Config;
 use divvun_api::init::{init_config, init_system};
-use divvun_api::language::speller::SpellerResponse;
 use divvun_api::language::grammar::GramcheckOutput;
+use divvun_api::language::speller::SpellerResponse;
 use divvun_api::server::state::ApiError;
+
+mod steps;
+use steps::watcher;
 
 static TEST_DATA_FILES: &'static str = "tests/resources/data_files";
 
@@ -46,8 +49,8 @@ impl Default for MyWorld {
 }
 
 mod api_steps {
-    use divvun_api::language::speller::SpellerResponse;
     use divvun_api::language::grammar::GramcheckOutput;
+    use divvun_api::language::speller::SpellerResponse;
     use divvun_api::server::state::ApiError;
 
     steps!(crate::MyWorld => {
@@ -136,7 +139,7 @@ mod api_steps {
                 "/grammar/en" => {
                     let response: ApiError = client.post(&url).json(&json!({"text": "doesn't matter"})).send().unwrap().json().unwrap();
                     world.api_error = Some(response);
-                }
+                },
                 _ => {
                     panic!("Unsupported endpoint");
                 },
@@ -163,31 +166,36 @@ mod api_steps {
             world.json = response;
         };
 
-        then "I get back a a JSON object with both a Speller and Grammar response" | world, _step | {
-            assert_eq!(json!({"data": {
-                "suggestions": {
-                  "grammar": {
-                    "errs": [
-                      {
-                        "errorText": "pákhat",
-                        "errorCode": "typo",
-                        "description": "Ii leat sátnelisttus",
-                      }
-                    ]
-                  },
-                  "speller": {
-                    "isCorrect": false,
-                    "suggestions": [
-                      "pakehat",
-                      "ákkat",
-                      "páhkat",
-                      "bákčat",
-                      "bákŋat"
-                    ]
-                  }
+        then "I get back a a JSON object with both a Speller and Grammar response" |world, _step| {
+            let suggestions = &world.json["data"]["suggestions"];
+            assert_ne!(suggestions, &json!(null), "no data or suggestions returned");
+
+            let grammar = &suggestions["grammar"];
+            assert_ne!(grammar, &json!(null), "no grammar response");
+
+            let speller = &suggestions["speller"];
+            assert_ne!(speller, &json!(null), "no speller response");
+
+            assert_eq!(&json!({
+              "errs": [
+                {
+                  "errorText": "pákhat",
+                  "errorCode": "typo",
+                  "description": "Ii leat sátnelisttus",
                 }
-              }
-            }), world.json.clone());
+              ]
+            }), grammar);
+
+            assert_eq!(&json!({
+              "isCorrect": false,
+              "suggestions": [
+                "pakehat",
+                "ákkat",
+                "páhkat",
+                "bákčat",
+                "bákŋat"
+              ]
+            }), speller);
         };
     });
 }
@@ -204,7 +212,11 @@ fn setup() {
         data_file_dir: PathBuf::from(TEST_DATA_FILES),
     };
 
-    init_system(&config);
+    std::thread::spawn(move || {
+        let (_app, system) = init_system(&config);
+
+        system.run().unwrap();
+    });
 
     // Sleep for a bit so the server can start before tests are ran
     thread::sleep(time::Duration::from_secs(1));
@@ -214,7 +226,8 @@ cucumber! {
     features: "./features", // Path to our feature files
     world: crate::MyWorld, // The world needs to be the same for steps and the main cucumber call
     steps: &[
-        api_steps::steps // the `steps!` macro creates a `steps` function in a module
+        api_steps::steps,
+        watcher::steps,
     ],
     setup: setup, // Optional; called once before everything
     before: &[],
