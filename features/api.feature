@@ -25,4 +25,4 @@ Feature: divvun-api
 
   Scenario: Checking GraphQL response for `se` language
     When I go to the endpoint `/graphql` with an appropriate GraphQL query
-    Then I get back a a JSON object with both a Speller and Grammar response
+    Then I get back a JSON object with both a Speller and Grammar response

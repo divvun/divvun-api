@@ -1,7 +1,7 @@
 use std::{fs, thread, time};
 
-use divvun_api::language::speller::SpellerResponse;
 use divvun_api::language::grammar::GramcheckOutput;
+use divvun_api::language::speller::SpellerResponse;
 
 use crate::MyWorld;
 
