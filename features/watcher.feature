@@ -13,7 +13,7 @@ Feature: watcher
     Given I have the `smj.zcheck` file available
     When I load the `smj.zcheck` file into the `grammar` folder
     And I go to the grammar endpoint for `smj` with appropriate data
-    Then I get back a GramcheckOutput
+    Then I get back a GramcheckOutput detecting a typo
 
   Scenario: Retrieving speller information for a language unloaded at runtime
     Given I have the `se.zhfst` file available

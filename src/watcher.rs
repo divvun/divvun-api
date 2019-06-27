@@ -34,7 +34,8 @@ impl Handler<Start> for Watcher {
 
         let (tx, rx) = channel();
 
-        let mut watcher = watcher(tx, Duration::from_secs(1)).unwrap();
+        let interval = state.config.watcher_interval_ms;
+        let mut watcher = watcher(tx, Duration::from_millis(interval)).unwrap();
 
         let dir = get_typed_data_dir(data_file_dir.as_path(), DataFileType::Grammar);
         watcher

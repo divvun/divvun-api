@@ -21,6 +21,7 @@ fn main() {
                 None => PathBuf::from("./"),
             },
         },
+        watcher_interval_ms: 1000,
     };
 
     let (_app, system) = init_system(&config);

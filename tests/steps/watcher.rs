@@ -22,8 +22,9 @@ steps!(MyWorld => {
 
         fs::copy(file_path, load_path).unwrap();
 
-        // The watcher watches every second
-        thread::sleep(time::Duration::from_secs(2));
+        let watcher_interval = world.config.watcher_interval_ms;
+        let sleep_time = watcher_interval + 500;
+        thread::sleep(time::Duration::from_millis(sleep_time));
     };
 
     when regex r"^I remove the `([^`]*)` file from the `([^`]*)` folder$" (String, String) |world, file_name, dir, _step| {
@@ -33,8 +34,9 @@ steps!(MyWorld => {
 
         fs::remove_file(load_path).unwrap();
 
-        // The watcher watches every second
-        thread::sleep(time::Duration::from_secs(2));
+        let watcher_interval = world.config.watcher_interval_ms;
+        let sleep_time = watcher_interval + 500;
+        thread::sleep(time::Duration::from_millis(sleep_time));
     };
 
     when "I go to the speller endpoint for `smj` with appropriate data" |world, _step| {
@@ -71,7 +73,7 @@ steps!(MyWorld => {
         world.grammar_response = Some(response);
     };
 
-    then "I get back a GramcheckOutput" |world, _step| {
+    then "I get back a GramcheckOutput detecting a typo" |world, _step| {
         let response = &world.grammar_response.clone().unwrap();
             assert_eq!(response.text, "bådnjår");
 

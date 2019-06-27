@@ -17,6 +17,7 @@ mod steps;
 use steps::watcher;
 
 static TEST_DATA_FILES: &'static str = "tests/resources/data_files";
+static TEST_WATCHER_INTERVAL: u64 = 500;
 
 pub struct MyWorld {
     config: Config,
@@ -35,6 +36,7 @@ impl Default for MyWorld {
         let config = Config {
             addr: toml_config.addr,
             data_file_dir: PathBuf::from(TEST_DATA_FILES),
+            watcher_interval_ms: TEST_WATCHER_INTERVAL,
         };
 
         // This function is called every time a new scenario is started
@@ -207,6 +209,7 @@ fn setup() {
     let config = Config {
         addr: toml_config.addr,
         data_file_dir: PathBuf::from(TEST_DATA_FILES),
+        watcher_interval_ms: TEST_WATCHER_INTERVAL,
     };
 
     std::thread::spawn(move || {
