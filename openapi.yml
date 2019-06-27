@@ -223,7 +223,7 @@ components:
               additionalProperties:
                 type: string
               example: { "se": "davvisámegiella", "bg": "български" }
-            spelle:
+            speller:
               type: object
               additionalProperties:
                 type: string

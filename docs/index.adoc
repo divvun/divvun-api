@@ -1,0 +1,103 @@
+:toc: left
+:toclevels: 3
+:nofooter:
+
+== Introduction
+
+`divvun-api` is a server for fielding text processing requests for various languages. Currently it
+supports grammar and spelling analysis. It has both RESTful API endpoints and a GraphQL endpoint.
+
+== Installation
+
+=== Prerequisites
+
+- Rust: https://www.rust-lang.org/tools/install
+- development package of OpenSSL
+- `divvun-checker` from https://github.com/divvun/libdivvun
+
+Language files need to be placed in the appropriate data directory:
+
+- Linux: `/home/<username>/.local/share/api-giellalt`
+
+- Mac OS: `/Users/<username>/Library/Application Support/no.uit.api-giellalt`
+
+- Windows: `C:\Users\<username>\AppData\Local\uit\api-giellalt\data`
+
+Inside the data directory place `.zcheck` files into the `grammar/` and `.zhfst` files into the `spelling/` folders, respectively.
+
+=== Installing
+
+Run `cargo build --release`. This will generate an executable at `/target/release/divvun-api` that can be
+ran separately (with a provided `config.toml`, see below). `cargo run` will also run the executable.
+
+== Usage
+
+=== Server
+
+The server requires configuration to run, which by default is provided by the `config.toml` in the root directory.
+A different configuration file can be supplied by setting the `DIVVUN_API_CONFIG_PATH` environment variable to the
+config file location, or by supplying the file location as a command like argument with `--config`.
+
+Only the bind address is currently required to be explicitly set.
+
+The server will be watching the appropriate language file directories for changes, so languages can be added or removed
+at runtime.
+
+=== API
+
+https://divvun.github.io/divvun-api/docs/redoc-static.html[API Overview]
+
+==== REST
+
+Most functions are mapped to endpoints in the form of `/{function}/{languageCode}`. For example, spelling requests
+for the Northern Sámi language are to be made to `/speller/se`.
+
+Example for checking the spelling of a word with curl on the default server:
+
+[source]
+----
+curl -X POST -H 'Content-Type: application/json' -i 'http://127.0.0.1:8080/speller/se' --data '{"word": "pákhat"}'
+----
+
+And the expected output:
+
+[source]
+----
+HTTP/1.1 200 OK
+{"word":"pákhat","is_correct":false,"suggestions":["pakehat","ákkat","páhkat","bákčat","bákŋat"]}
+----
+
+Grammar request:
+
+[source]
+----
+curl -X POST -H 'Content-Type: application/json' -i 'http://127.0.0.1:8080/grammar/se' --data '{"text": "Danne lea politijuristtaide eanemus praktihkkalaččat vuogas dan dahkat Čáhcesullos."}'
+----
+
+The Grammar Checker provides more involved output:
+
+[source]
+----
+HTTP/1.1 200 OK
+{"text":"Danne lea politijuristtaide eanemus praktihkkalaččat vuogas dan dahkat Čáhcesullos.",
+"errs":[{"error_text":"politijuristtaide","start_index":10,"end_index":27,"error_code":"typo","description":"Ii leat sátnelisttus","suggestions":["politiijajuristtaide"],"title":"Čállinmeattáhusat"},{"error_text":"praktihkkalaččat","start_index":36,"end_index":52,"error_code":"typo","description":"Ii leat sátnelisttus","suggestions":["praktihkalaččat"],"title":"Čállinmeattáhusat"}]}
+----
+
+==== GraphQL
+
+Multiple kinds of processing can be requested in a single GraphQL query. See https://graphql.org/ for information on GraphQL itself and how to use it effectively.
+
+A https://github.com/graphql/graphiql[GraphiQL] interface will be hosted at the `/graphiql` endpoint. Direct requests should go to `/graphql`.
+
+[source]
+----
+curl -X POST -H 'Content-Type: application/json' -i 'http://127.0.0.1:8080/graphql' --data  '{ "query": "query { suggestions(text: \"pákhat\", language: \"se\") { speller { isCorrect }, grammar { errs { startIndex endIndex errorCode description suggestions title } } } }" }'
+----
+
+Sample output:
+
+[source]
+----
+HTTP/1.1 200 OK
+{"data":{"suggestions":{"speller":{"isCorrect":false},"grammar":{"errs":[{"startIndex":0,"endIndex":6,"errorCode":"typo","description":"Ii leat sátnelisttus","suggestions":[],"title":"Čállinmeattáhusat"}]}}}}
+----
