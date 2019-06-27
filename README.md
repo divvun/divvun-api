@@ -4,12 +4,35 @@ Starts a web server for accessing the Divvun spellcheck API.
 
 See https://divvun.github.io/divvun-api/docs/index.html for installation and usage documentation instructions.
 
+## OpenAPI
+
+The OpenAPI documentation is generated with [ReDoc](https://github.com/Redocly/redoc) and hosted at https://divvun.github.io/divvun-api/docs/redoc-static.html
+
+To refresh the documentation, install the [redoc-cli](https://github.com/Redocly/redoc/blob/master/cli/README.md) NPM package and run `redoc-cli bundle openapi.yml`.
+This will generate a `redoc-static.html` file that needs to be placed in the `docs` folder.
+
 ## Testing
 
-Tests use the files in tests/resources/data_files. The data_files folder is expected to have both `se` and `smj`
-grammar and checker files for the purposes of testing the file watcher.
+Tests use the files in `tests/resources/data_files`. The files need to be organized as follows before running `cargo test`:
 
-The `se` files are also expected to be present in the `speller` and `grammar` folders for testing initial loading.
+```
+tests
+|--resources
+   |--data_files
+      |  se.zcheck
+      |  se.zhfst
+      |  smj.zcheck
+      |  smj.zhfst
+      |
+      |--grammar
+         |  se.zcheck
+      |--spelling
+         |  se.zhfst
+```
+
+The base `data_files` folder is expected to have both `se` and `smj`
+grammar (`.zcheck`) and checker (`.zhfst`) files for the purposes of testing the file watcher, and
+the `se` files are also expected to be present in the `spelling` and `grammar` folders for testing loading of files at startup.
 
 - run `cargo test`
 
