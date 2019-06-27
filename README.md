@@ -23,9 +23,11 @@ Inside the folder place `.zcheck` files into `grammar/` and `.zhfst` files into 
 
 ## Testing
 
-Tests use the files in tests/resources/data_files. The `se` files are expected to be present in the `speller` and `grammar` folders.
+Tests use the files in tests/resources/data_files. The data_files folder is expected to have both `se` and `smj`
+grammar and checker files for the purposes of testing the file watcher.
 
-- `divvun-checker` must be installed
+The `se` files are also expected to be present in the `speller` and `grammar` folders for testing initial loading.
+
 - run `cargo test`
 
 ## Deployment

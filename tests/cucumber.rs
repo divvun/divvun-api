@@ -127,23 +127,20 @@ mod api_steps {
             assert_ne!(err1.suggestions.len(), 0);
         };
 
-        when regex r"^I go to the endpoint `([^`]*)` for not loaded language$" (String) |world, endpoint, _step| {
+        when regex r"^I go to the endpoint `(/speller/.*)` for not loaded language$" (String) |world, endpoint, _step| {
             let client = reqwest::Client::new();
             let url = format!("http://{}{}", &world.config.addr, endpoint);
 
-            match endpoint.as_str() {
-                "/speller/en" => {
-                    let response: ApiError = client.post(&url).json(&json!({"word": "pákhat"})).send().unwrap().json().unwrap();
-                    world.api_error = Some(response);
-                },
-                "/grammar/en" => {
-                    let response: ApiError = client.post(&url).json(&json!({"text": "doesn't matter"})).send().unwrap().json().unwrap();
-                    world.api_error = Some(response);
-                },
-                _ => {
-                    panic!("Unsupported endpoint");
-                },
-            };
+            let response: ApiError = client.post(&url).json(&json!({"word": "doesn'tmatter"})).send().unwrap().json().unwrap();
+            world.api_error = Some(response);
+        };
+
+        when regex r"^I go to the endpoint `(/grammar/.*)` for not loaded language$" (String) |world, endpoint, _step| {
+            let client = reqwest::Client::new();
+            let url = format!("http://{}{}", &world.config.addr, endpoint);
+
+            let response: ApiError = client.post(&url).json(&json!({"text": "doesn't matter"})).send().unwrap().json().unwrap();
+            world.api_error = Some(response);
         };
 
         then regex r"^I get back an ApiError with the message `([^`]*)`$" (String) |world, message, _step| {
