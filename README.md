@@ -2,24 +2,7 @@
 
 Starts a web server for accessing the Divvun spellcheck API.
 
-## Installing
-
-For personal development and testing.
-
-### Prerequisites
-
-- development package of OpenSSL
-- `divvun-checker` from https://github.com/divvun/libdivvun
-
-For development, language files need to be placed in these folders:
-
-Linux: `/home/<username>/.local/share/api-giellalt`
-
-Mac OS: `/Users/<username>/Library/Application Support/no.uit.api-giellalt`
-
-Windows: `C:\Users\<username>\AppData\Local\uit\api-giellalt\data`
-
-Inside the folder place `.zcheck` files into `grammar/` and `.zhfst` files into `spelling/` folders.
+See https://divvun.github.io/divvun-api/docs/index.html for installation and usage documentation instructions.
 
 ## Testing
 
