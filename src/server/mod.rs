@@ -1,7 +1,8 @@
 use std::env;
 
 use actix_web::dev::Server;
-use actix_web::{http::header, middleware, middleware::cors::Cors, web, App, HttpServer};
+use actix_web::{http::header, middleware, web, App, HttpServer};
+use actix_cors::Cors;
 
 pub mod state;
 
