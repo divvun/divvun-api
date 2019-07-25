@@ -6,7 +6,7 @@ use futures::future::{err, ok, Future};
 use hashbrown::HashMap;
 use log::{info, warn};
 use parking_lot::RwLock;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::server::state::{ApiError, SpellingSuggestions, UnhoistFutureExt};
 use divvunspell::speller::SpellerConfig;

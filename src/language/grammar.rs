@@ -9,7 +9,7 @@ use hashbrown::HashMap;
 use log::{debug, error, info, warn};
 use parking_lot::RwLock;
 use regex::Regex;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::server::state::{ApiError, GrammarSuggestions, UnhoistFutureExt};
 

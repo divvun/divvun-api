@@ -4,7 +4,7 @@ use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
 
 use csv;
-use serde_derive::Serialize;
+use serde::Serialize;
 
 #[derive(Clone, Copy)]
 pub enum DataFileType {

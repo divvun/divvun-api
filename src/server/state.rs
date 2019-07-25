@@ -10,7 +10,7 @@ use futures::future::{err, ok, Future};
 use hashbrown::HashMap;
 use log::error;
 use parking_lot::RwLock;
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::config::Config;

@@ -11,31 +11,30 @@ authors = [
 edition = "2018"
 
 [dependencies]
-actix-web = "1.0.0"
-actix-cors = "0.1.0"
-actix = "0.8.3"
-log = "0.4.6"
-env_logger = "0.6.1"
-juniper = "0.11.1"
-serde = "1.0.88"
-serde_json = "1.0.38"
-serde_derive = "1.0.88"
+actix-web = "=1.0.5"
+actix-cors = "=0.1.0"
+actix = "=0.8.3"
+log = "=0.4.7"
+env_logger = "=0.6.1"
+juniper = "=0.11.1"
+serde = { version = "=1.0.97", features = ["derive"] }
+serde_json = "=1.0.40"
 divvunspell = { git = "https://github.com/divvun/divvunspell", branch="develop" }
-futures = "0.1.27"
-failure = "0.1.5"
-hashbrown = "0.3.0"
-toml = "0.5.0"
-directories = "2.0.1"
-regex = "1.1.7"
-csv = "1.0.5"
-clap = "2.33.0"
-notify = "4.0.12"
-parking_lot = "0.8.0"
+futures = "=0.1.27"
+failure = "=0.1.5"
+hashbrown = "=0.3.0"
+toml = "=0.5.0"
+directories = "=2.0.1"
+regex = "=1.1.7"
+csv = "1.1"
+clap = "=2.33.0"
+notify = "=4.0.12"
+parking_lot = "=0.8.0"
 
 [[test]]
 name = "cucumber"
 harness = false # Allows Cucumber to print output instead of libtest
 
 [dev-dependencies]
-cucumber_rust = { version = "^0.6", default-features = false }
-reqwest = "0.9.18"
+cucumber_rust = { version = "=0.6", default-features = false }
+reqwest = "=0.9.18"
