@@ -3,8 +3,10 @@ use std::fs;
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
 
-use csv;
+use log::warn;
 use serde::Serialize;
+
+include!(concat!(env!("OUT_DIR"), "/autonyms.rs"));
 
 #[derive(Clone, Copy)]
 pub enum DataFileType {
@@ -39,15 +41,19 @@ impl DataFileType {
     }
 }
 
+#[derive(Debug)]
+struct Record {
+    tag3: &'static str,
+    tag1: Option<&'static str>,
+    name: Option<&'static str>,
+    autonym: Option<&'static str>,
+    source: Option<&'static str>,
+}
+
 pub fn available_languages(
     data_file_dir: &Path,
     data_type: DataFileType,
 ) -> HashMap<String, String> {
-    let autonyms_tsv = include_str!("../../assets/iso639-autonyms.tsv");
-    let mut reader = csv::ReaderBuilder::new()
-        .delimiter(b'\t')
-        .from_reader(autonyms_tsv.as_bytes());
-
     let lang_data_files = match get_data_files(data_file_dir, data_type) {
         Ok(v) => v,
         Err(_) => Vec::new(),
@@ -64,17 +70,24 @@ pub fn available_languages(
         })
         .collect();
 
-    let all_langs: HashMap<String, String> = reader
-        .records()
-        .filter_map(|r| r.ok())
-        .filter(|r| r.get(1).is_some())
-        .filter(|r| r.get(3).is_some())
-        .map(|r| (r.get(1).unwrap().to_owned(), r.get(3).unwrap().to_owned()))
-        .collect();
-
     let result: HashMap<String, String> = lang_keys
         .iter()
-        .map(|k| (k.clone(), all_langs[k].clone()))
+        .map(|k| {
+            if !LANGUAGE_AUTONYMS.contains_key::<str>(k) {
+                warn!("Key {} not found in autonyms file", k);
+                (k.clone(), k.clone())
+            } else {
+                let record = LANGUAGE_AUTONYMS.get::<str>(k).unwrap();
+
+                let value = record
+                    .autonym
+                    .or(record.name)
+                    .or(Some(record.tag3))
+                    .unwrap();
+
+                (k.clone(), value.to_owned())
+            }
+        })
         .collect();
 
     result

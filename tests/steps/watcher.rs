@@ -105,4 +105,16 @@ steps!(MyWorld => {
 
         fs::copy(file_path, load_path).unwrap();
     };
+
+    then "I get back a JSON object with the `smj` language" |world, _step| {
+        let file_name = "smj.zcheck";
+        let grammar_dir = "grammar";
+
+        let mut grammar_path = world.config.data_file_dir.clone();
+        grammar_path.push(grammar_dir);
+        grammar_path.push(file_name);
+
+        fs::remove_file(grammar_path).unwrap();
+        assert_eq!(&world.json, &json!({"available":{"grammar":{"se":"davvisámegiella","smj":"julevsámegiella"},"speller":{"se":"davvisámegiella"}}}));
+    };
 });

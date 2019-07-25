@@ -298,7 +298,6 @@ mod test {
 
     #[test]
     fn test_foo() {
-        let _some_data =
-            json!({"errs":[["heno",0,4,"typo","Čállinmeattáhus",[]]],"text":"heno."});
+        let _some_data = json!({"errs":[["heno",0,4,"typo","Čállinmeattáhus",[]]],"text":"heno."});
     }
 }

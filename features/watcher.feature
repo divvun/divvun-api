@@ -28,3 +28,9 @@ Feature: watcher
     And I go to the endpoint `/grammar/se` for not loaded language
     Then I get back an ApiError with the message `No grammar checker available for language se`
     And I put the removed `se.zcheck` file back into the `grammar` folder
+
+  Scenario: Retrieving available languages for an ISO 639-3 language loaded at runtime
+    Given I have the `smj.zcheck` file available
+    When I load the `smj.zcheck` file into the `grammar` folder
+    And I go to the endpoint `/languages`
+    Then I get back a JSON object with the `smj` language
