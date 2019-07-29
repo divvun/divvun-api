@@ -9,7 +9,7 @@ Feature: divvun-api
 
   Scenario: Checking spelling for `se` language
     When I go to the endpoint `/speller/se` with appropriate data
-    Then I get back a SpellerResponse with is_correct set to `false` and some suggestions
+    Then I get back a SpellerResponse with suggestions for each word
 
   Scenario: Checking grammar for `se` language
     When I go to the endpoint `/grammar/se` with appropriate data

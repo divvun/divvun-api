@@ -119,7 +119,7 @@ components:
     SpellCheckRequest:
       type: object
       required:
-        - word
+        - text
       properties:
         word:
           type: string
@@ -190,19 +190,45 @@ components:
     SpellCheckResult:
       type: object
       required:
-        - word
-        - suggestions
+        - text
+        - results
       properties:
-          word:
+          text:
             type: string
-            description: The misspelled word
-            example: oainá
-          suggestions:
+            description: The supplied text, one or more words
+            example: oainá páhkat
+          results:
             type: array
             items:
-              type: string
-              example: oaidná
-      
+              type: object
+              required:
+                - word
+                - isCorrect
+                - suggestions
+              properties:
+                word:
+                  type: string
+                  description: the supplied word
+                  example: oainá
+                isCorrect:
+                  type: boolean
+                  description: Whether the word is spelled correctly
+                  example: false
+                suggestions:
+                  type: object
+                  required:
+                    - value
+                    - weight
+                  properties:
+                    value:
+                      type: string
+                      description: Potential correction
+                      example: oaidná
+                    weight:
+                      type: number
+                      description: Weight of the correction
+                      example: 18.432617
+
     GrammarPreferencesResult:
       type: object
       properties:

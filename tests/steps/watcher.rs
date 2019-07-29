@@ -43,17 +43,23 @@ steps!(MyWorld => {
         let client = reqwest::Client::new();
         let url = format!("http://{}/speller/smj", &world.config.addr);
 
-        let response: SpellerResponse = client.post(&url).json(&json!({"word": "bådnjåt"})).send().unwrap().json().unwrap();
+        let response: SpellerResponse = client.post(&url).json(&json!({"text": "bådnjåt"})).send().unwrap().json().unwrap();
         world.speller_response = Some(response);
     };
 
-    then "I get back a SpellerResponse with is_correct set to true and some suggestions" |world, _step| {
+
+    then "I get back a SpellerResponse with some suggestions" |world, _step| {
         let response = &world.speller_response.clone().unwrap();
-            assert_eq!(response.word, "bådnjåt");
-            assert_eq!(response.is_correct, true);
-            assert_eq!(response.suggestions, vec![
-                "bådnjåt".to_owned(), "bådnjit".to_owned(), "bådnjut".to_owned(), "bådnjå".to_owned(), "bådnjål".to_owned()
-            ]);
+            assert_eq!(response.text, "bådnjåt");
+            assert_eq!(response.results.len(), 1);
+
+            let res = &response.results[0];
+
+            assert_eq!(res.word, "bådnjåt");
+            assert_eq!(res.is_correct, true);
+            assert_eq!(res.suggestions.len() > 3, true);
+            assert_eq!(res.suggestions[0].value, "bådnjåt");
+            assert_eq!(res.suggestions[0].weight, 12.590923309326172);
 
         let file_name = "smj.zhfst";
         let spelling_dir = "spelling";

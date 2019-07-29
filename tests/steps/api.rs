@@ -32,7 +32,7 @@ steps!(crate::MyWorld => {
 
         match matches[1].as_str() {
             "/speller/se" => {
-                let response: SpellerResponse = client.post(&url).json(&json!({"word": "pákhat"})).send().unwrap().json().unwrap();
+                let response: SpellerResponse = client.post(&url).json(&json!({"text": "oainá páhkat"})).send().unwrap().json().unwrap();
                 world.speller_response = Some(response);
             },
             "/grammar/se" => {
@@ -45,13 +45,24 @@ steps!(crate::MyWorld => {
         };
     };
 
-    then regex r"^I get back a SpellerResponse with is_correct set to `([^`]*)` and some suggestions$" (bool) |world, is_correct, _step| {
+    then "I get back a SpellerResponse with suggestions for each word" |world, _step| {
         let response = &world.speller_response.clone().unwrap();
-        assert_eq!(response.word, "pákhat");
-        assert_eq!(response.is_correct, is_correct);
-        assert_eq!(response.suggestions, vec![
-            "pakehat".to_owned(), "ákkat".to_owned(), "páhkat".to_owned(), "bákčat".to_owned(), "bákŋat".to_owned()
-            ]);
+        assert_eq!(response.text, "oainá páhkat");
+        assert_eq!(response.results.len(), 2);
+
+        let oaina_res = &response.results[0];
+        assert_eq!(oaina_res.word, "oainá");
+        assert_eq!(oaina_res.is_correct, false);
+        assert_eq!(oaina_res.suggestions.len() > 3, true);
+        assert_eq!(oaina_res.suggestions[0].value, "oaidná");
+        assert_eq!(oaina_res.suggestions[0].weight, 18.4326171875);
+
+        let pahkat_res = &response.results[1];
+        assert_eq!(pahkat_res.word, "páhkat");
+        assert_eq!(pahkat_res.is_correct, true);
+        assert_eq!(pahkat_res.suggestions.len() > 3, true);
+        assert_eq!(pahkat_res.suggestions[0].value, "dahkat");
+        assert_eq!(pahkat_res.suggestions[0].weight, 14.0126953125);
     };
 
     then regex r"^I get back a GrammarOutput with `([^`]*)` and `([^`]*)` error codes$" (String, String) |world, code0, code1, _step| {
@@ -80,7 +91,7 @@ steps!(crate::MyWorld => {
         let client = reqwest::Client::new();
         let url = format!("http://{}{}", &world.config.addr, endpoint);
 
-        let response: ApiError = client.post(&url).json(&json!({"word": "doesn'tmatter"})).send().unwrap().json().unwrap();
+        let response: ApiError = client.post(&url).json(&json!({"text": "doesn'tmatter"})).send().unwrap().json().unwrap();
         world.api_error = Some(response);
     };
 
@@ -104,7 +115,7 @@ steps!(crate::MyWorld => {
         let response: serde_json::value::Value = client.post(&url)
             .json(&json!({
                 "query": "query { suggestions(text: \"pákhat\", language: \"se\") {\
-                    speller { isCorrect suggestions }\
+                    speller { results { word suggestions { value } } }\
                     grammar { errs { errorText errorCode description } }\
                      } }"}))
             .send().unwrap().json().unwrap();
@@ -133,14 +144,20 @@ steps!(crate::MyWorld => {
         }), grammar);
 
         assert_eq!(&json!({
-          "isCorrect": false,
-          "suggestions": [
-            "pakehat",
-            "ákkat",
-            "páhkat",
-            "bákčat",
-            "bákŋat"
-          ]
+          "results": [{
+            "word": "pákhat",
+            "suggestions": [{
+                "value": "pakehat"
+            },{
+                "value": "ákkat"
+            },{
+                "value": "páhkat"
+            },{
+                "value": "bákčat"
+            },{
+                "value": "bákŋat"
+            }]
+          }]
         }), speller);
     };
 });

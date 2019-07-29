@@ -7,7 +7,7 @@ Feature: watcher
     Given I have the `smj.zhfst` file available
     When I load the `smj.zhfst` file into the `spelling` folder
     And I go to the speller endpoint for `smj` with appropriate data
-    Then I get back a SpellerResponse with is_correct set to true and some suggestions
+    Then I get back a SpellerResponse with some suggestions
 
   Scenario: Retrieving grammar information for a newly added language
     Given I have the `smj.zcheck` file available

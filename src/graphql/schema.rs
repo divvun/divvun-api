@@ -1,10 +1,10 @@
 use futures::future::Future;
 use juniper::{graphql_object, EmptyMutation, FieldResult, GraphQLObject, RootNode};
 
-use crate::language::grammar;
-use crate::language::grammar::GramcheckRequest;
-use crate::language::speller::SpellerRequest;
+use crate::language::grammar::{self, GramcheckRequest};
+use crate::language::speller::{self, SpellerRequest};
 use crate::server::state::InnerState;
+use divvunspell::speller::suggestion::Suggestion;
 
 impl juniper::Context for InnerState {}
 
@@ -21,8 +21,39 @@ pub struct Grammar {
 
 #[derive(GraphQLObject)]
 pub struct Speller {
+    pub results: Vec<SpellerResult>,
+}
+
+#[derive(GraphQLObject)]
+pub struct SpellerResult {
+    pub word: String,
     pub is_correct: bool,
-    pub suggestions: Vec<String>,
+    pub suggestions: Vec<SpellerSuggestion>,
+}
+
+impl From<speller::SpellerResult> for SpellerResult {
+    fn from(item: speller::SpellerResult) -> Self {
+        SpellerResult {
+            word: item.word,
+            is_correct: item.is_correct,
+            suggestions: item.suggestions.into_iter().map(|suggestion| SpellerSuggestion::from(suggestion)).collect(),
+        }
+    }
+}
+
+#[derive(GraphQLObject)]
+pub struct SpellerSuggestion {
+    pub value: String,
+    pub weight: f64,
+}
+
+impl From<Suggestion> for SpellerSuggestion {
+    fn from(item: Suggestion) -> Self {
+        SpellerSuggestion {
+            value: item.value,
+            weight: item.weight as f64,
+        }
+    }
 }
 
 #[derive(GraphQLObject)]
@@ -101,7 +132,7 @@ fn get_speller_suggestions(state: &InnerState, text: &str, language: &str) -> Fi
         .spelling_suggestions
         .spelling_suggestions(
             SpellerRequest {
-                word: text.to_owned(),
+                text: text.to_owned(),
             },
             language,
         )
@@ -109,8 +140,8 @@ fn get_speller_suggestions(state: &InnerState, text: &str, language: &str) -> Fi
 
     match speller_suggestions {
         Ok(speller_output) => Ok(Speller {
-            is_correct: speller_output.is_correct,
-            suggestions: speller_output.suggestions,
+            results: speller_output.results.into_iter()
+                .map(|suggestion| SpellerResult::from(suggestion)).collect(),
         }),
         Err(error) => Err(error)?,
     }

@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::server::state::{ApiError, SpellingSuggestions, UnhoistFutureExt};
 use divvunspell::speller::SpellerConfig;
+use divvunspell::speller::suggestion::Suggestion;
+use divvunspell::tokenizer::Tokenize;
 
 pub struct DivvunSpellExecutor {
     pub speller_archive: SpellerArchive,
@@ -31,14 +33,20 @@ impl actix::Supervised for DivvunSpellExecutor {
 
 #[derive(Deserialize, Debug)]
 pub struct SpellerRequest {
-    pub word: String,
+    pub text: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct SpellerResponse {
+    pub text: String,
+    pub results: Vec<SpellerResult>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct SpellerResult {
     pub word: String,
     pub is_correct: bool,
-    pub suggestions: Vec<String>,
+    pub suggestions: Vec<Suggestion>,
 }
 
 impl Message for SpellerRequest {
@@ -51,29 +59,39 @@ impl Handler<SpellerRequest> for DivvunSpellExecutor {
     fn handle(&mut self, msg: SpellerRequest, _: &mut Self::Context) -> Self::Result {
         let speller = self.speller_archive.speller();
 
-        let is_correct = Arc::clone(&speller).is_correct(&msg.word);
+        let cloned_text = msg.text.clone();
+        let words = cloned_text.words().into_iter();
 
-        let suggestions = speller
-            .suggest_with_config(
-                &msg.word,
-                &SpellerConfig {
-                    n_best: Some(5),
-                    max_weight: Some(10000f32),
-                    beam: None,
-                    with_caps: true,
-                    pool_start: 128,
-                    pool_max: 128,
-                    seen_node_sample_rate: 20,
-                },
-            )
-            .into_iter()
-            .map(|m| m.value)
-            .collect();
+        let results: Vec<SpellerResult> = words.map(|word| {
+            let cloned_speller = self.speller_archive.speller().clone();
+            let is_correct = Arc::clone(&speller).is_correct(word);
+
+            let suggestions = cloned_speller
+                .suggest_with_config(
+                    word,
+                    &SpellerConfig {
+                        n_best: Some(5),
+                        max_weight: Some(10000f32),
+                        beam: None,
+                        with_caps: true,
+                        pool_start: 128,
+                        pool_max: 128,
+                        seen_node_sample_rate: 20,
+                    },
+                )
+                .into_iter()
+                .collect();
+
+            SpellerResult {
+                word: word.to_owned(),
+                is_correct,
+                suggestions,
+            }
+        }).collect();
 
         Ok(SpellerResponse {
-            word: msg.word,
-            is_correct,
-            suggestions,
+            text: cloned_text.clone(),
+            results,
         })
     }
 }
