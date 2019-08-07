@@ -55,8 +55,7 @@ pub struct HyphenationResponse {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct HyphenationResult {
-    pub word: String,
-    pub pattern: String,
+    pub value: String,
     pub weight: String,
 }
 
@@ -95,8 +94,7 @@ impl Handler<HyphenationRequest> for HyphenationExecutor {
                 }
 
                 HyphenationResult {
-                    word: components[0].to_owned(),
-                    pattern: components[1].to_owned(),
+                    value: components[1].to_owned(),
                     weight: components[2].to_owned(),
                 }
             })
