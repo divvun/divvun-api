@@ -55,6 +55,18 @@ impl Handler<Start> for Watcher {
             .unwrap();
         info!("Watching directory `{}` for speller files", dir.display());
 
+        let dir = get_typed_data_dir(data_file_dir.as_path(), DataFileType::Hyphenation);
+        watcher
+            .watch(
+                get_typed_data_dir(data_file_dir.as_path(), DataFileType::Hyphenation),
+                RecursiveMode::NonRecursive,
+            )
+            .unwrap();
+        info!(
+            "Watching directory `{}` for hyphenation files",
+            dir.display()
+        );
+
         loop {
             match rx.recv() {
                 Ok(event) => match &event {
@@ -80,6 +92,9 @@ impl Handler<Start> for Watcher {
                             } else if file_info.extension == DataFileType::Spelling.as_ext() {
                                 let spellers = &state.language_functions.spelling_suggestions;
                                 spellers.add(file_info.stem, file_info.path);
+                            } else if file_info.extension == DataFileType::Hyphenation.as_ext() {
+                                let hyphenators = &state.language_functions.hyphenation_suggestions;
+                                hyphenators.add(file_info.stem, file_info.path);
                             }
                         }
                     }
@@ -97,6 +112,9 @@ impl Handler<Start> for Watcher {
                             } else if file_info.extension == DataFileType::Spelling.as_ext() {
                                 let spellers = &state.language_functions.spelling_suggestions;
                                 spellers.remove(file_info.stem);
+                            } else if file_info.extension == DataFileType::Hyphenation.as_ext() {
+                                let hyphenators = &state.language_functions.hyphenation_suggestions;
+                                hyphenators.remove(file_info.stem);
                             }
                         }
                     }
@@ -127,6 +145,11 @@ impl Handler<Start> for Watcher {
 
                                 spellers.remove(file_info.stem);
                                 spellers.add(file_info.stem, file_info.path);
+                            } else if file_info.extension == DataFileType::Hyphenation.as_ext() {
+                                let hyphenators = &state.language_functions.hyphenation_suggestions;
+
+                                hyphenators.remove(file_info.stem);
+                                hyphenators.add(file_info.stem, file_info.path);
                             }
                         }
                     }

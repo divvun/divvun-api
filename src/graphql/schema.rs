@@ -36,7 +36,11 @@ impl From<speller::SpellerResult> for SpellerResult {
         SpellerResult {
             word: item.word,
             is_correct: item.is_correct,
-            suggestions: item.suggestions.into_iter().map(|suggestion| SpellerSuggestion::from(suggestion)).collect(),
+            suggestions: item
+                .suggestions
+                .into_iter()
+                .map(|suggestion| SpellerSuggestion::from(suggestion))
+                .collect(),
         }
     }
 }
@@ -140,8 +144,11 @@ fn get_speller_suggestions(state: &InnerState, text: &str, language: &str) -> Fi
 
     match speller_suggestions {
         Ok(speller_output) => Ok(Speller {
-            results: speller_output.results.into_iter()
-                .map(|suggestion| SpellerResult::from(suggestion)).collect(),
+            results: speller_output
+                .results
+                .into_iter()
+                .map(|suggestion| SpellerResult::from(suggestion))
+                .collect(),
         }),
         Err(error) => Err(error)?,
     }

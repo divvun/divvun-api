@@ -9,8 +9,8 @@ use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 
 use crate::server::state::{ApiError, SpellingSuggestions, UnhoistFutureExt};
-use divvunspell::speller::SpellerConfig;
 use divvunspell::speller::suggestion::Suggestion;
+use divvunspell::speller::SpellerConfig;
 use divvunspell::tokenizer::Tokenize;
 
 pub struct DivvunSpellExecutor {
@@ -62,32 +62,34 @@ impl Handler<SpellerRequest> for DivvunSpellExecutor {
         let cloned_text = msg.text.clone();
         let words = cloned_text.words().into_iter();
 
-        let results: Vec<SpellerResult> = words.map(|word| {
-            let cloned_speller = self.speller_archive.speller().clone();
-            let is_correct = Arc::clone(&speller).is_correct(word);
+        let results: Vec<SpellerResult> = words
+            .map(|word| {
+                let cloned_speller = self.speller_archive.speller().clone();
+                let is_correct = Arc::clone(&speller).is_correct(word);
 
-            let suggestions = cloned_speller
-                .suggest_with_config(
-                    word,
-                    &SpellerConfig {
-                        n_best: Some(5),
-                        max_weight: Some(10000f32),
-                        beam: None,
-                        with_caps: true,
-                        pool_start: 128,
-                        pool_max: 128,
-                        seen_node_sample_rate: 20,
-                    },
-                )
-                .into_iter()
-                .collect();
+                let suggestions = cloned_speller
+                    .suggest_with_config(
+                        word,
+                        &SpellerConfig {
+                            n_best: Some(5),
+                            max_weight: Some(10000f32),
+                            beam: None,
+                            with_caps: true,
+                            pool_start: 128,
+                            pool_max: 128,
+                            seen_node_sample_rate: 20,
+                        },
+                    )
+                    .into_iter()
+                    .collect();
 
-            SpellerResult {
-                word: word.to_owned(),
-                is_correct,
-                suggestions,
-            }
-        }).collect();
+                SpellerResult {
+                    word: word.to_owned(),
+                    is_correct,
+                    suggestions,
+                }
+            })
+            .collect();
 
         Ok(SpellerResponse {
             text: cloned_text.clone(),

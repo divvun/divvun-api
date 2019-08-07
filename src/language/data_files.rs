@@ -12,12 +12,14 @@ include!(concat!(env!("OUT_DIR"), "/autonyms.rs"));
 pub enum DataFileType {
     Grammar,
     Spelling,
+    Hyphenation,
 }
 
 #[derive(Serialize)]
 pub struct AvailableLanguagesByType {
     pub grammar: HashMap<String, String>,
     pub speller: HashMap<String, String>,
+    //pub hyphenation: HashMap<String, String>,
 }
 
 #[derive(Serialize)]
@@ -30,6 +32,7 @@ impl DataFileType {
         match self {
             DataFileType::Grammar => "zcheck",
             DataFileType::Spelling => "zhfst",
+            DataFileType::Hyphenation => "hfstol",
         }
     }
 
@@ -37,6 +40,7 @@ impl DataFileType {
         match self {
             DataFileType::Grammar => "grammar",
             DataFileType::Spelling => "spelling",
+            DataFileType::Hyphenation => "hyphenation",
         }
     }
 }

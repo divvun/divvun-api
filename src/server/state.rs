@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::io;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -20,6 +21,9 @@ use crate::language::data_files::{get_data_files, DataFileType};
 use crate::language::grammar::{
     list_preferences, AsyncGramchecker, GramcheckExecutor, GramcheckOutput, GramcheckRequest,
 };
+use crate::language::hyphenation::{
+    AsyncHyphenation, HyphenationExecutor, HyphenationRequest, HyphenationResponse,
+};
 use crate::language::speller::{
     AsyncSpeller, DivvunSpellExecutor, SpellerRequest, SpellerResponse,
 };
@@ -28,6 +32,22 @@ use crate::language::speller::{
 #[fail(display = "api error")]
 pub struct ApiError {
     pub message: String,
+}
+
+impl From<io::Error> for ApiError {
+    fn from(item: io::Error) -> Self {
+        ApiError {
+            message: item.to_string(),
+        }
+    }
+}
+
+impl From<std::string::FromUtf8Error> for ApiError {
+    fn from(item: std::string::FromUtf8Error) -> Self {
+        ApiError {
+            message: item.to_string(),
+        }
+    }
 }
 
 impl ResponseError for ApiError {
@@ -42,6 +62,7 @@ impl ResponseError for ApiError {
 pub struct LanguageFunctions {
     pub spelling_suggestions: Box<dyn SpellingSuggestions>,
     pub grammar_suggestions: Box<dyn GrammarSuggestions>,
+    pub hyphenation_suggestions: Box<dyn HyphenationSuggestions>,
 }
 
 pub trait SpellingSuggestions: Send + Sync {
@@ -60,6 +81,16 @@ pub trait GrammarSuggestions: Send + Sync {
         message: GramcheckRequest,
         language: &str,
     ) -> Box<dyn Future<Item = GramcheckOutput, Error = ApiError>>;
+    fn add(&self, language: &str, path: &str) -> Box<dyn Future<Item = (), Error = ApiError>>;
+    fn remove(&self, language: &str) -> Box<dyn Future<Item = (), Error = ApiError>>;
+}
+
+pub trait HyphenationSuggestions: Send + Sync {
+    fn hyphenation_suggestions(
+        &self,
+        message: HyphenationRequest,
+        language: &str,
+    ) -> Box<dyn Future<Item = HyphenationResponse, Error = ApiError>>;
     fn add(&self, language: &str, path: &str) -> Box<dyn Future<Item = (), Error = ApiError>>;
     fn remove(&self, language: &str) -> Box<dyn Future<Item = (), Error = ApiError>>;
 }
@@ -102,6 +133,7 @@ pub fn create_state(config: &Config) -> State {
         language_functions: LanguageFunctions {
             spelling_suggestions: Box::new(get_speller(config)),
             grammar_suggestions: Box::new(get_gramchecker(&grammar_data_files)),
+            hyphenation_suggestions: Box::new(get_hyphenation(config)),
         },
         gramcheck_preferences: Arc::new(RwLock::new(get_gramcheck_preferences(
             &grammar_data_files,
@@ -170,6 +202,45 @@ fn get_gramchecker(grammar_data_files: &Vec<PathBuf>) -> AsyncGramchecker {
 
     AsyncGramchecker {
         gramcheckers: Arc::new(RwLock::new(gramcheckers)),
+    }
+}
+
+fn get_hyphenation(config: &Config) -> AsyncHyphenation {
+    let hyphenation_data_files =
+        get_data_files(config.data_file_dir.as_path(), DataFileType::Hyphenation).unwrap_or_else(
+            |e| {
+                eprintln!("Error getting hyphenation data files: {}", e);
+                vec![]
+            },
+        );
+
+    let hyphenators = hyphenation_data_files
+        .into_iter()
+        .map(|f| {
+            let lang_code = f
+                .file_stem()
+                .expect(&format!("oops, didn't find a file stem for {:?}", f))
+                .to_str()
+                .unwrap();
+
+            let hyphenator_path = f.to_str().unwrap().to_owned();
+            let owned_language = lang_code.to_owned();
+
+            (
+                lang_code.into(),
+                actix::Supervisor::start_in_arbiter(&actix::Arbiter::new(), move |_| {
+                    HyphenationExecutor {
+                        path: hyphenator_path.to_owned(),
+                        language: owned_language,
+                        terminated: false,
+                    }
+                }),
+            )
+        })
+        .collect();
+
+    AsyncHyphenation {
+        hyphenators: Arc::new(RwLock::new(hyphenators)),
     }
 }
 
