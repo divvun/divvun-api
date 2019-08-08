@@ -9,6 +9,8 @@ use log::{info, warn};
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 
+use divvunspell::tokenizer::Tokenize;
+
 use crate::server::state::{ApiError, LanguageSuggestions, UnhoistFutureExt};
 
 pub struct HyphenationExecutor {
@@ -44,17 +46,23 @@ impl Handler<Die> for HyphenationExecutor {
 
 #[derive(Debug, Deserialize)]
 pub struct HyphenationRequest {
-    pub word: String,
+    pub text: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct HyphenationResponse {
-    pub word: String,
+    pub text: String,
     pub results: Vec<HyphenationResult>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct HyphenationResult {
+    pub word: String,
+    pub patterns: Vec<HyphenationPattern>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct HyphenationPattern {
     pub value: String,
     pub weight: String,
 }
@@ -67,42 +75,54 @@ impl Handler<HyphenationRequest> for HyphenationExecutor {
     type Result = Result<HyphenationResponse, ApiError>;
 
     fn handle(&mut self, msg: HyphenationRequest, _: &mut Self::Context) -> Self::Result {
-        let mut hfst_child = Command::new("hfst-lookup")
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .arg("-n")
-            .arg("1")
-            .arg("-q")
-            .arg(&self.path)
-            .spawn()?;
+        let cloned_text = msg.text.clone();
+        let words = cloned_text.words().into_iter();
 
-        {
-            let hfst_in = hfst_child.stdin.as_mut().unwrap();
-            hfst_in.write_all(&msg.word.as_bytes())?;
-        }
+        let results = words
+            .map(|word| {
+                let mut hfst_child = Command::new("hfst-lookup")
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .arg("-n")
+                    .arg("1")
+                    .arg("-q")
+                    .arg(&self.path)
+                    .spawn()?;
 
-        let result = String::from_utf8(hfst_child.wait_with_output()?.stdout)?
-            .trim()
-            .to_string();
-
-        let suggestions = result
-            .lines()
-            .map(|line| {
-                let components: Vec<&str> = line.split("\t").collect();
-                if components.len() < 3 {
-                    panic!("hfst-lookup returning unexpected number of tokens per word");
+                {
+                    let hfst_in = hfst_child.stdin.as_mut().unwrap();
+                    hfst_in.write_all(&word.as_bytes())?;
                 }
 
-                HyphenationResult {
-                    value: components[1].to_owned(),
-                    weight: components[2].to_owned(),
-                }
+                let result = String::from_utf8(hfst_child.wait_with_output()?.stdout)?
+                    .trim()
+                    .to_string();
+
+                let suggestions = result
+                    .lines()
+                    .map(|line| {
+                        let components: Vec<&str> = line.split("\t").collect();
+                        if components.len() < 3 {
+                            panic!("hfst-lookup returning unexpected number of tokens per word");
+                        }
+
+                        HyphenationPattern {
+                            value: components[1].to_owned(),
+                            weight: components[2].to_owned(),
+                        }
+                    })
+                    .collect();
+
+                Ok(HyphenationResult {
+                    word: word.to_owned(),
+                    patterns: suggestions,
+                })
             })
-            .collect();
+            .collect::<Result<Vec<HyphenationResult>, ApiError>>()?;
 
         Ok(HyphenationResponse {
-            word: msg.word,
-            results: suggestions,
+            text: cloned_text,
+            results,
         })
     }
 }
