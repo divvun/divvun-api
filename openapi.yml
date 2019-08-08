@@ -310,7 +310,7 @@ components:
                       description: Hyphenation pattern
                       example: o^đas^maht^tin#mi^nist^tar
                     weight:
-                      type: number
+                      type: string
                       description: Weight of the suggestion
                       example: 60.000000
 

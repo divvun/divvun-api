@@ -2,6 +2,7 @@ use futures::future::Future;
 use juniper::{graphql_object, EmptyMutation, FieldResult, GraphQLObject, RootNode};
 
 use crate::language::grammar::{self, GramcheckRequest};
+use crate::language::hyphenation::{self, HyphenationRequest};
 use crate::language::speller::{self, SpellerRequest};
 use crate::server::state::InnerState;
 use divvunspell::speller::suggestion::Suggestion;
@@ -86,6 +87,45 @@ impl From<grammar::GramcheckErrResponse> for GramcheckErrResponse {
     }
 }
 
+#[derive(GraphQLObject)]
+pub struct Hyphenation {
+    pub results: Vec<HyphenationResult>,
+}
+
+#[derive(GraphQLObject)]
+pub struct HyphenationResult {
+    pub word: String,
+    pub patterns: Vec<HyphenationPattern>,
+}
+
+impl From<hyphenation::HyphenationResult> for HyphenationResult {
+    fn from(item: hyphenation::HyphenationResult) -> Self {
+        HyphenationResult {
+            word: item.word,
+            patterns: item
+                .patterns
+                .into_iter()
+                .map(|pattern| HyphenationPattern::from(pattern))
+                .collect(),
+        }
+    }
+}
+
+#[derive(GraphQLObject)]
+pub struct HyphenationPattern {
+    pub value: String,
+    pub weight: String,
+}
+
+impl From<hyphenation::HyphenationPattern> for HyphenationPattern {
+    fn from(item: hyphenation::HyphenationPattern) -> Self {
+        HyphenationPattern {
+            value: item.value,
+            weight: item.weight,
+        }
+    }
+}
+
 pub struct QueryRoot;
 
 graphql_object!(QueryRoot: InnerState |&self| {
@@ -103,6 +143,10 @@ graphql_object!(Suggestions: InnerState |&self| {
 
     field speller(&executor) -> FieldResult<Speller> {
         get_speller_suggestions(executor.context(), &self.text, &self.language)
+    }
+
+    field hyphenation(&executor) -> FieldResult<Hyphenation> {
+        get_hyphenation_suggestions(executor.context(), &self.text, &self.language)
     }
 });
 
@@ -148,6 +192,34 @@ fn get_speller_suggestions(state: &InnerState, text: &str, language: &str) -> Fi
                 .results
                 .into_iter()
                 .map(|suggestion| SpellerResult::from(suggestion))
+                .collect(),
+        }),
+        Err(error) => Err(error)?,
+    }
+}
+
+fn get_hyphenation_suggestions(
+    state: &InnerState,
+    text: &str,
+    language: &str,
+) -> FieldResult<Hyphenation> {
+    let hyphenation_suggestions = state
+        .language_functions
+        .hyphenation_suggestions
+        .suggestions(
+            HyphenationRequest {
+                text: text.to_owned(),
+            },
+            language,
+        )
+        .wait();
+
+    match hyphenation_suggestions {
+        Ok(hyphenation_response) => Ok(Hyphenation {
+            results: hyphenation_response
+                .results
+                .into_iter()
+                .map(|result| HyphenationResult::from(result))
                 .collect(),
         }),
         Err(error) => Err(error)?,
