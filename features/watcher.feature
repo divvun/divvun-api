@@ -1,7 +1,7 @@
 Feature: watcher
 
   Background:
-    Given I have loaded `se` grammar and speller files
+    Given I have loaded `se` grammar, speller, and hyphenator files
 
   Scenario: Retrieving speller information for a newly added language
     Given I have the `smj.zhfst` file available

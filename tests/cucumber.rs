@@ -10,6 +10,7 @@ use std::{env, thread, time};
 use divvun_api::config::Config;
 use divvun_api::init::{init_config, init_system};
 use divvun_api::language::grammar::GramcheckResponse;
+use divvun_api::language::hyphenation::HyphenationResponse;
 use divvun_api::language::speller::SpellerResponse;
 use divvun_api::server::state::ApiError;
 
@@ -25,6 +26,7 @@ pub struct MyWorld {
     json: serde_json::Value,
     speller_response: Option<SpellerResponse>,
     grammar_response: Option<GramcheckResponse>,
+    hyphenation_response: Option<HyphenationResponse>,
     api_error: Option<ApiError>,
 }
 
@@ -46,6 +48,7 @@ impl Default for MyWorld {
             config: config.clone(),
             speller_response: None,
             grammar_response: None,
+            hyphenation_response: None,
             api_error: None,
         }
     }

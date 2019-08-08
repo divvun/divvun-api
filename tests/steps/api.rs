@@ -1,18 +1,20 @@
 use divvun_api::language::grammar::GramcheckResponse;
+use divvun_api::language::hyphenation::HyphenationResponse;
 use divvun_api::language::speller::SpellerResponse;
 use divvun_api::server::state::ApiError;
 
 steps!(crate::MyWorld => {
-    given "I have loaded `se` grammar and speller files" |world, _step| {
-        let grammar_file = "grammar/se.zcheck";
-        let mut dir_path = world.config.data_file_dir.clone();
-        dir_path.push(grammar_file);
-        assert_eq!(dir_path.exists(), true, "{} is not loaded", grammar_file);
+    given "I have loaded `se` grammar, speller, and hyphenator files" |world, _step| {
+        let files = vec![
+            "grammar/se.zcheck".to_owned(),
+            "spelling/se.zhfst".to_owned(),
+            "hyphenation/se.hfstol".to_owned()];
 
-        let speller_file = "spelling/se.zhfst";
-        let mut dir_path = world.config.data_file_dir.clone();
-        dir_path.push(speller_file);
-        assert_eq!(dir_path.exists(), true, "{} is not loaded", speller_file);
+        for file in &files {
+            let mut dir_path = world.config.data_file_dir.clone();
+                dir_path.push(file);
+                assert_eq!(dir_path.exists(), true, "{} is not loaded", file);
+        }
     };
 
     when regex r"^I go to the endpoint `([^`]*)`$" |world, matches, _step| {
@@ -38,6 +40,11 @@ steps!(crate::MyWorld => {
             "/grammar/se" => {
                 let response: GramcheckResponse = client.post(&url).json(&json!({"text": "sup  ney"})).send().unwrap().json().unwrap();
                 world.grammar_response = Some(response);
+            },
+            "/hyphenation/se" => {
+                let response: HyphenationResponse = client.post(&url).json(&json!({"text": "ođasmahttinministtar ođasmahtinministtar"}))
+                    .send().unwrap().json().unwrap();
+                world.hyphenation_response = Some(response);
             },
             _ => {
                 panic!("Unsupported endpoint");
@@ -65,7 +72,7 @@ steps!(crate::MyWorld => {
         assert_eq!(pahkat_res.suggestions[0].weight, 14.0126953125);
     };
 
-    then regex r"^I get back a GrammarOutput with `([^`]*)` and `([^`]*)` error codes$" (String, String) |world, code0, code1, _step| {
+    then regex r"^I get back a GramcheckResponse with `([^`]*)` and `([^`]*)` error codes$" (String, String) |world, code0, code1, _step| {
         let response = &world.grammar_response.clone().unwrap();
         assert_eq!(response.text, "sup  ney");
 
@@ -85,6 +92,19 @@ steps!(crate::MyWorld => {
         assert_eq!(err1.error_code, code1);
         assert_eq!(err1.title, "Sátnegaskameattáhusat");
         assert_ne!(err1.suggestions.len(), 0);
+    };
+
+    then "I get back the correct HyphenationResponse" |world, _step| {
+        let response = &world.hyphenation_response.clone().unwrap();
+
+        assert_eq!(
+        json!({"text":"ođasmahttinministtar ođasmahtinministtar","results":[
+            {"word":"ođasmahttinministtar", "patterns":[
+                {"value":"o^đas^maht^tin#mi^nist^tar","weight":"60.000000"},
+                {"value":"o^đas^maht^tin^mi^nist^tar","weight":"5000.000000"}]},
+            {"word":"ođasmahtinministtar","patterns":[
+                {"value":"o^đas^mah^tin^mi^nist^tar","weight":"5000.000000"}]}]}),
+        serde_json::to_value(&response).unwrap());
     };
 
     when regex r"^I go to the endpoint `(/speller/.*)` for not loaded language$" (String) |world, endpoint, _step| {

@@ -6,4 +6,5 @@ node_modules
 
 *.zhfst
 *.zcheck
+*.hfstol
 *.retry
