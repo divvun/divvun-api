@@ -1,18 +1,11 @@
 use std::collections::BTreeMap;
-use std::io;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use actix::Addr;
-use actix_web::error::ResponseError;
-use actix_web::HttpResponse;
-use failure::Fail;
 use futures::future::{err, ok, Future};
 use hashbrown::HashMap;
-use log::error;
 use parking_lot::RwLock;
-use serde::{Deserialize, Serialize};
-use serde_json::json;
 
 use crate::config::Config;
 use crate::file_utils::get_file_info;
@@ -28,37 +21,7 @@ use crate::language::hyphenation::{
 use crate::language::speller::{
     AsyncSpeller, DivvunSpellExecutor, SpellerRequest, SpellerResponse,
 };
-
-#[derive(Fail, Debug, Deserialize, Serialize, Clone)]
-#[fail(display = "api error")]
-pub struct ApiError {
-    pub message: String,
-}
-
-impl From<io::Error> for ApiError {
-    fn from(item: io::Error) -> Self {
-        ApiError {
-            message: item.to_string(),
-        }
-    }
-}
-
-impl From<std::string::FromUtf8Error> for ApiError {
-    fn from(item: std::string::FromUtf8Error) -> Self {
-        ApiError {
-            message: item.to_string(),
-        }
-    }
-}
-
-impl ResponseError for ApiError {
-    fn render_response(&self) -> HttpResponse {
-        error!("{}", self.message);
-        return HttpResponse::InternalServerError()
-            .content_type("application/json")
-            .json(json!({ "message": self.message }));
-    }
-}
+use crate::error::ApiError;
 
 pub struct LanguageFunctions {
     pub spelling_suggestions:

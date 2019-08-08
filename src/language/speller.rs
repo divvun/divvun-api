@@ -8,7 +8,8 @@ use log::{info, warn};
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 
-use crate::server::state::{ApiError, LanguageSuggestions, UnhoistFutureExt};
+use crate::server::state::{LanguageSuggestions, UnhoistFutureExt};
+use crate::error::ApiError;
 use divvunspell::speller::suggestion::Suggestion;
 use divvunspell::speller::SpellerConfig;
 use divvunspell::tokenizer::Tokenize;

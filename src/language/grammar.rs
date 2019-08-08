@@ -11,7 +11,8 @@ use parking_lot::RwLock;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use crate::server::state::{ApiError, LanguageSuggestions, UnhoistFutureExt};
+use crate::server::state::{LanguageSuggestions, UnhoistFutureExt};
+use crate::error::ApiError;
 
 pub struct GramcheckExecutor {
     pub child: Child,

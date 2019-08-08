@@ -11,7 +11,8 @@ use serde::{Deserialize, Serialize};
 
 use divvunspell::tokenizer::Tokenize;
 
-use crate::server::state::{ApiError, LanguageSuggestions, UnhoistFutureExt};
+use crate::server::state::{LanguageSuggestions, UnhoistFutureExt};
+use crate::error::ApiError;
 
 pub struct HyphenationExecutor {
     pub path: String,

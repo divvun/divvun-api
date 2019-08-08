@@ -12,7 +12,7 @@ use divvun_api::init::{init_config, init_system};
 use divvun_api::language::grammar::GramcheckResponse;
 use divvun_api::language::hyphenation::HyphenationResponse;
 use divvun_api::language::speller::SpellerResponse;
-use divvun_api::server::state::ApiError;
+use divvun_api::error::ApiError;
 
 mod steps;
 use steps::api;
