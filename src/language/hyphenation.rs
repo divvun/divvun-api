@@ -65,7 +65,7 @@ pub struct HyphenationResult {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct HyphenationPattern {
     pub value: String,
-    pub weight: String,
+    pub weight: f64,
 }
 
 impl Message for HyphenationRequest {
@@ -104,15 +104,24 @@ impl Handler<HyphenationRequest> for HyphenationExecutor {
                     .map(|line| {
                         let components: Vec<&str> = line.split("\t").collect();
                         if components.len() < 3 {
-                            panic!("hfst-lookup returning unexpected number of tokens per word");
+                            return Err(ApiError {
+                                message: format!("hfst-lookup returning unexpected number of tokens per word: {}", line),
+                            });
                         }
 
-                        HyphenationPattern {
-                            value: components[1].to_owned(),
-                            weight: components[2].to_owned(),
+                        let weight = components[2].parse();
+                        if let Ok(weight) = weight {
+                            return Ok(HyphenationPattern {
+                                value: components[1].to_owned(),
+                                weight,
+                            });
+                        } else {
+                            return Err(ApiError {
+                                message: format!("Failed to parse float value from hfst-lookup: {}", line),
+                            });
                         }
                     })
-                    .collect();
+                    .collect::<Result<Vec<HyphenationPattern>, ApiError>>()?;
 
                 Ok(HyphenationResult {
                     word: word.to_owned(),

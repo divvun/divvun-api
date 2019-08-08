@@ -114,7 +114,7 @@ impl From<hyphenation::HyphenationResult> for HyphenationResult {
 #[derive(GraphQLObject)]
 pub struct HyphenationPattern {
     pub value: String,
-    pub weight: String,
+    pub weight: f64,
 }
 
 impl From<hyphenation::HyphenationPattern> for HyphenationPattern {
