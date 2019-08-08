@@ -107,11 +107,11 @@ impl Handler<HyphenationRequest> for HyphenationExecutor {
     }
 }
 
-pub struct AsyncHyphenation {
+pub struct AsyncHyphenator {
     pub hyphenators: Arc<RwLock<HashMap<String, Addr<HyphenationExecutor>>>>,
 }
 
-impl LanguageSuggestions for AsyncHyphenation {
+impl LanguageSuggestions for AsyncHyphenator {
     type Request = HyphenationRequest;
     type Response = HyphenationResponse;
 

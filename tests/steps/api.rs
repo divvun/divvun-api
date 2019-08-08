@@ -1,4 +1,4 @@
-use divvun_api::language::grammar::GramcheckOutput;
+use divvun_api::language::grammar::GramcheckResponse;
 use divvun_api::language::speller::SpellerResponse;
 use divvun_api::server::state::ApiError;
 
@@ -36,7 +36,7 @@ steps!(crate::MyWorld => {
                 world.speller_response = Some(response);
             },
             "/grammar/se" => {
-                let response: GramcheckOutput = client.post(&url).json(&json!({"text": "sup  ney"})).send().unwrap().json().unwrap();
+                let response: GramcheckResponse = client.post(&url).json(&json!({"text": "sup  ney"})).send().unwrap().json().unwrap();
                 world.grammar_response = Some(response);
             },
             _ => {

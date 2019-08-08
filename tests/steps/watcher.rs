@@ -1,6 +1,6 @@
 use std::{fs, thread, time};
 
-use divvun_api::language::grammar::GramcheckOutput;
+use divvun_api::language::grammar::GramcheckResponse;
 use divvun_api::language::speller::SpellerResponse;
 
 use crate::MyWorld;
@@ -75,7 +75,7 @@ steps!(MyWorld => {
         let client = reqwest::Client::new();
         let url = format!("http://{}/grammar/smj", &world.config.addr);
 
-        let response: GramcheckOutput = client.post(&url).json(&json!({"text": "bådnjår"})).send().unwrap().json().unwrap();
+        let response: GramcheckResponse = client.post(&url).json(&json!({"text": "bådnjår"})).send().unwrap().json().unwrap();
         world.grammar_response = Some(response);
     };
 

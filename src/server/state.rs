@@ -20,10 +20,10 @@ use crate::graphql::schema::create_schema;
 use crate::graphql::schema::Schema;
 use crate::language::data_files::{get_data_files, DataFileType};
 use crate::language::grammar::{
-    list_preferences, AsyncGramchecker, GramcheckExecutor, GramcheckOutput, GramcheckRequest,
+    list_preferences, AsyncGramchecker, GramcheckExecutor, GramcheckRequest, GramcheckResponse,
 };
 use crate::language::hyphenation::{
-    AsyncHyphenation, HyphenationExecutor, HyphenationRequest, HyphenationResponse,
+    AsyncHyphenator, HyphenationExecutor, HyphenationRequest, HyphenationResponse,
 };
 use crate::language::speller::{
     AsyncSpeller, DivvunSpellExecutor, SpellerRequest, SpellerResponse,
@@ -64,7 +64,7 @@ pub struct LanguageFunctions {
     pub spelling_suggestions:
         Box<dyn LanguageSuggestions<Request = SpellerRequest, Response = SpellerResponse>>,
     pub grammar_suggestions:
-        Box<dyn LanguageSuggestions<Request = GramcheckRequest, Response = GramcheckOutput>>,
+        Box<dyn LanguageSuggestions<Request = GramcheckRequest, Response = GramcheckResponse>>,
     pub hyphenation_suggestions:
         Box<dyn LanguageSuggestions<Request = HyphenationRequest, Response = HyphenationResponse>>,
 }
@@ -168,7 +168,7 @@ fn get_gramchecker(grammar_data_files: &Vec<PathBuf>) -> AsyncGramchecker {
     gramchecker
 }
 
-fn get_hyphenation(config: &Config) -> AsyncHyphenation {
+fn get_hyphenation(config: &Config) -> AsyncHyphenator {
     let hyphenation_data_files =
         get_data_files(config.data_file_dir.as_path(), DataFileType::Hyphenation).unwrap_or_else(
             |e| {
@@ -177,7 +177,7 @@ fn get_hyphenation(config: &Config) -> AsyncHyphenation {
             },
         );
 
-    let hyphenator = AsyncHyphenation {
+    let hyphenator = AsyncHyphenator {
         hyphenators: Arc::new(RwLock::new(
             HashMap::<String, Addr<HyphenationExecutor>>::new(),
         )),

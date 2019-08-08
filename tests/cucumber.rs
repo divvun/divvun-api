@@ -9,7 +9,7 @@ use std::{env, thread, time};
 
 use divvun_api::config::Config;
 use divvun_api::init::{init_config, init_system};
-use divvun_api::language::grammar::GramcheckOutput;
+use divvun_api::language::grammar::GramcheckResponse;
 use divvun_api::language::speller::SpellerResponse;
 use divvun_api::server::state::ApiError;
 
@@ -24,7 +24,7 @@ pub struct MyWorld {
     config: Config,
     json: serde_json::Value,
     speller_response: Option<SpellerResponse>,
-    grammar_response: Option<GramcheckOutput>,
+    grammar_response: Option<GramcheckResponse>,
     api_error: Option<ApiError>,
 }
 

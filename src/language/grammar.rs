@@ -87,11 +87,11 @@ pub struct GramcheckRequest {
 }
 
 impl Message for GramcheckRequest {
-    type Result = Result<GramcheckOutput, ApiError>;
+    type Result = Result<GramcheckResponse, ApiError>;
 }
 
 impl Handler<GramcheckRequest> for GramcheckExecutor {
-    type Result = Result<GramcheckOutput, ApiError>;
+    type Result = Result<GramcheckResponse, ApiError>;
 
     fn handle(&mut self, msg: GramcheckRequest, _: &mut Self::Context) -> Self::Result {
         let stdin = self.child.stdin.as_mut().expect("Failed to open stdin");
@@ -162,7 +162,7 @@ pub struct GramcheckErrResponse {
 }
 
 #[derive(Deserialize, Serialize, Clone)]
-pub struct GramcheckOutput {
+pub struct GramcheckResponse {
     pub text: String,
     pub errs: Vec<GramcheckErrResponse>,
 }
@@ -173,7 +173,7 @@ pub struct AsyncGramchecker {
 
 impl LanguageSuggestions for AsyncGramchecker {
     type Request = GramcheckRequest;
-    type Response = GramcheckOutput;
+    type Response = GramcheckResponse;
 
     fn suggestions(
         &self,
