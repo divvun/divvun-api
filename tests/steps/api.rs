@@ -25,7 +25,11 @@ steps!(crate::MyWorld => {
     };
 
     then "I get back a JSON object with available languages and their titles" |world, _step| {
-        assert_eq!(&world.json, &json!({"available":{"grammar":{"se": "davvisámegiella"},"speller":{"se":"davvisámegiella"}}}));
+        assert_eq!(&world.json, &json!({"available":{
+            "grammar": {"se": "davvisámegiella"},
+            "hyphenation": {"se": "davvisámegiella"},
+            "speller": {"se" :"davvisámegiella"}
+        }}));
     };
 
     when regex r"^I go to the endpoint `([^`]*)` with appropriate data$" |world, matches, _step| {

@@ -121,6 +121,10 @@ steps!(MyWorld => {
         grammar_path.push(file_name);
 
         fs::remove_file(grammar_path).unwrap();
-        assert_eq!(&world.json, &json!({"available":{"grammar":{"se":"davvisámegiella","smj":"julevsámegiella"},"speller":{"se":"davvisámegiella"}}}));
+        assert_eq!(&world.json, &json!({"available":{
+            "grammar": {"se": "davvisámegiella","smj":"julevsámegiella"},
+            "hyphenation": {"se": "davvisámegiella"},
+            "speller": {"se": "davvisámegiella"}
+        }}));
     };
 });

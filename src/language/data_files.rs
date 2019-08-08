@@ -19,7 +19,7 @@ pub enum DataFileType {
 pub struct AvailableLanguagesByType {
     pub grammar: HashMap<String, String>,
     pub speller: HashMap<String, String>,
-    //pub hyphenation: HashMap<String, String>,
+    pub hyphenation: HashMap<String, String>,
 }
 
 #[derive(Serialize)]

@@ -20,14 +20,14 @@ pub fn get_available_languages_handler(
         available_languages(config.data_file_dir.as_path(), DataFileType::Grammar);
     let spell_checker_langs =
         available_languages(config.data_file_dir.as_path(), DataFileType::Spelling);
-    //let hyphenation_langs =
-    //  available_languages(config.data_file_dir.as_path(), DataFileType::Hyphenation);
+    let hyphenation_langs =
+        available_languages(config.data_file_dir.as_path(), DataFileType::Hyphenation);
 
     Ok(web::Json(AvailableLanguagesResponse {
         available: AvailableLanguagesByType {
             grammar: grammar_checker_langs,
             speller: spell_checker_langs,
-            //hyphenation: hyphenation_langs,
+            hyphenation: hyphenation_langs,
         },
     }))
 }
