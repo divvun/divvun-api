@@ -110,7 +110,7 @@ fn get_grammar_suggestions(state: &InnerState, text: &str, language: &str) -> Fi
     let grammar_suggestions = state
         .language_functions
         .grammar_suggestions
-        .grammar_suggestions(
+        .suggestions(
             GramcheckRequest {
                 text: text.to_owned(),
             },
@@ -134,7 +134,7 @@ fn get_speller_suggestions(state: &InnerState, text: &str, language: &str) -> Fi
     let speller_suggestions = state
         .language_functions
         .spelling_suggestions
-        .spelling_suggestions(
+        .suggestions(
             SpellerRequest {
                 text: text.to_owned(),
             },

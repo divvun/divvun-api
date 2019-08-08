@@ -60,7 +60,7 @@ pub fn gramchecker_handler(
     let grammar_suggestions = &state.language_functions.grammar_suggestions;
 
     grammar_suggestions
-        .grammar_suggestions(body.0, &path)
+        .suggestions(body.0, &path)
         .from_err()
         .map(|res| HttpResponse::Ok().json(res))
 }
@@ -73,7 +73,7 @@ pub fn hyphenation_handler(
     let hyphenation_suggestions = &state.language_functions.hyphenation_suggestions;
 
     hyphenation_suggestions
-        .hyphenation_suggestions(body.0, &path)
+        .suggestions(body.0, &path)
         .from_err()
         .map(|res| HttpResponse::Ok().json(res))
 }
@@ -86,7 +86,7 @@ pub fn speller_handler(
     let spelling_suggestions = &state.language_functions.spelling_suggestions;
 
     spelling_suggestions
-        .spelling_suggestions(body.0, &path)
+        .suggestions(body.0, &path)
         .from_err()
         .map(|res| HttpResponse::Ok().json(res))
 }

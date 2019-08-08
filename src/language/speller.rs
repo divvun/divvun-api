@@ -8,7 +8,7 @@ use log::{info, warn};
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 
-use crate::server::state::{ApiError, SpellingSuggestions, UnhoistFutureExt};
+use crate::server::state::{ApiError, LanguageSuggestions, UnhoistFutureExt};
 use divvunspell::speller::suggestion::Suggestion;
 use divvunspell::speller::SpellerConfig;
 use divvunspell::tokenizer::Tokenize;
@@ -115,12 +115,15 @@ pub struct AsyncSpeller {
     pub spellers: Arc<RwLock<HashMap<String, Addr<DivvunSpellExecutor>>>>,
 }
 
-impl SpellingSuggestions for AsyncSpeller {
-    fn spelling_suggestions(
+impl LanguageSuggestions for AsyncSpeller {
+    type Request = SpellerRequest;
+    type Response = SpellerResponse;
+
+    fn suggestions(
         &self,
-        message: SpellerRequest,
+        message: Self::Request,
         language: &str,
-    ) -> Box<dyn Future<Item = SpellerResponse, Error = ApiError>> {
+    ) -> Box<dyn Future<Item = Self::Response, Error = ApiError>> {
         let lock = self.spellers.read();
 
         let speller = match lock.get(language) {

@@ -61,37 +61,23 @@ impl ResponseError for ApiError {
 }
 
 pub struct LanguageFunctions {
-    pub spelling_suggestions: Box<dyn SpellingSuggestions>,
-    pub grammar_suggestions: Box<dyn GrammarSuggestions>,
-    pub hyphenation_suggestions: Box<dyn HyphenationSuggestions>,
+    pub spelling_suggestions:
+        Box<dyn LanguageSuggestions<Request = SpellerRequest, Response = SpellerResponse>>,
+    pub grammar_suggestions:
+        Box<dyn LanguageSuggestions<Request = GramcheckRequest, Response = GramcheckOutput>>,
+    pub hyphenation_suggestions:
+        Box<dyn LanguageSuggestions<Request = HyphenationRequest, Response = HyphenationResponse>>,
 }
 
-pub trait SpellingSuggestions: Send + Sync {
-    fn spelling_suggestions(
-        &self,
-        message: SpellerRequest,
-        language: &str,
-    ) -> Box<dyn Future<Item = SpellerResponse, Error = ApiError>>;
-    fn add(&self, language: &str, path: &str) -> Box<dyn Future<Item = (), Error = ApiError>>;
-    fn remove(&self, language: &str) -> Box<dyn Future<Item = (), Error = ApiError>>;
-}
+pub trait LanguageSuggestions: Send + Sync {
+    type Request;
+    type Response;
 
-pub trait GrammarSuggestions: Send + Sync {
-    fn grammar_suggestions(
+    fn suggestions(
         &self,
-        message: GramcheckRequest,
+        message: Self::Request,
         language: &str,
-    ) -> Box<dyn Future<Item = GramcheckOutput, Error = ApiError>>;
-    fn add(&self, language: &str, path: &str) -> Box<dyn Future<Item = (), Error = ApiError>>;
-    fn remove(&self, language: &str) -> Box<dyn Future<Item = (), Error = ApiError>>;
-}
-
-pub trait HyphenationSuggestions: Send + Sync {
-    fn hyphenation_suggestions(
-        &self,
-        message: HyphenationRequest,
-        language: &str,
-    ) -> Box<dyn Future<Item = HyphenationResponse, Error = ApiError>>;
+    ) -> Box<dyn Future<Item = Self::Response, Error = ApiError>>;
     fn add(&self, language: &str, path: &str) -> Box<dyn Future<Item = (), Error = ApiError>>;
     fn remove(&self, language: &str) -> Box<dyn Future<Item = (), Error = ApiError>>;
 }

@@ -9,7 +9,7 @@ use log::{info, warn};
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 
-use crate::server::state::{ApiError, HyphenationSuggestions, UnhoistFutureExt};
+use crate::server::state::{ApiError, LanguageSuggestions, UnhoistFutureExt};
 
 pub struct HyphenationExecutor {
     pub path: String,
@@ -111,12 +111,15 @@ pub struct AsyncHyphenation {
     pub hyphenators: Arc<RwLock<HashMap<String, Addr<HyphenationExecutor>>>>,
 }
 
-impl HyphenationSuggestions for AsyncHyphenation {
-    fn hyphenation_suggestions(
+impl LanguageSuggestions for AsyncHyphenation {
+    type Request = HyphenationRequest;
+    type Response = HyphenationResponse;
+
+    fn suggestions(
         &self,
-        message: HyphenationRequest,
+        message: Self::Request,
         language: &str,
-    ) -> Box<dyn Future<Item = HyphenationResponse, Error = ApiError>> {
+    ) -> Box<dyn Future<Item = Self::Response, Error = ApiError>> {
         let lock = self.hyphenators.read();
 
         let hyphenator = match lock.get(language) {

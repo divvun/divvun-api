@@ -11,7 +11,7 @@ use parking_lot::RwLock;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
-use crate::server::state::{ApiError, GrammarSuggestions, UnhoistFutureExt};
+use crate::server::state::{ApiError, LanguageSuggestions, UnhoistFutureExt};
 
 pub struct GramcheckExecutor {
     pub child: Child,
@@ -171,12 +171,15 @@ pub struct AsyncGramchecker {
     pub gramcheckers: Arc<RwLock<HashMap<String, Addr<GramcheckExecutor>>>>,
 }
 
-impl GrammarSuggestions for AsyncGramchecker {
-    fn grammar_suggestions(
+impl LanguageSuggestions for AsyncGramchecker {
+    type Request = GramcheckRequest;
+    type Response = GramcheckOutput;
+
+    fn suggestions(
         &self,
-        message: GramcheckRequest,
+        message: Self::Request,
         language: &str,
-    ) -> Box<dyn Future<Item = GramcheckOutput, Error = ApiError>> {
+    ) -> Box<dyn Future<Item = Self::Response, Error = ApiError>> {
         let gramcheckers = self.gramcheckers.read();
 
         let gramchecker = match gramcheckers.get(language) {
