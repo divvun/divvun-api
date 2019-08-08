@@ -40,7 +40,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SpellCheckResult"
+                $ref: "#/components/schemas/SpellerResponse"
         default:
           description: Error
   /grammar/{languageCode}:
@@ -71,7 +71,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/GrammarCheckResult"
+                  $ref: "#/components/schemas/GramcheckResponse"
         default:
           description: Error
   /hyphenation/{languageCode}:
@@ -127,7 +127,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GrammarPreferencesResult"
+                $ref: "#/components/schemas/GramcheckPreferencesResponse"
         default:
           description: Error
   /languages:
@@ -143,9 +143,10 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LanguageOptionsResult"
+                $ref: "#/components/schemas/AvailableLanguagesResponse"
         default:
           description: Error
+
 components:
   schemas:
     SpellCheckRequest:
@@ -162,15 +163,13 @@ components:
       properties:
         text:
           type: string
-        ignore_tags:
-          type: array
-          items: 
-            type: string
-            example: "msyn-compound"
     HyphenationRequest:
       type: object
       required:
         - text
+      properties:
+        word:
+          type: string
 
     GrammarError:
       type: object
@@ -209,7 +208,7 @@ components:
             type: string
             example: servodatdilálašvuođain
             
-    GrammarCheckResult:
+    GramcheckResponse:
       type: object
       required:
         - text
@@ -224,7 +223,7 @@ components:
           items:
             $ref: "#/components/schemas/GrammarError"
 
-    SpellCheckResult:
+    SpellerResponse:
       type: object
       required:
         - text
@@ -266,7 +265,7 @@ components:
                       description: Weight of the correction
                       example: 18.432617
 
-    GrammarPreferencesResult:
+    GramcheckPreferencesResponse:
       type: object
       properties:
         error_tags:
@@ -314,7 +313,7 @@ components:
                       description: Weight of the suggestion
                       example: 60.000000
 
-    LanguageOptionsResult:
+    AvailableLanguagesResponse:
       type: object
       properties:
         available:
@@ -326,6 +325,11 @@ components:
                 type: string
               example: { "se": "davvisámegiella", "bg": "български" }
             speller:
+              type: object
+              additionalProperties:
+                type: string
+              example: { "se": "davvisámegiella" }
+            hyphenation:
               type: object
               additionalProperties:
                 type: string
