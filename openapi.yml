@@ -12,6 +12,7 @@ tags:
   - name: General
   - name: Grammar check
   - name: Spellcheck
+  - name: Hyphenation
 paths:
   /speller/{languageCode}:
     parameters:
@@ -71,6 +72,37 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/GrammarCheckResult"
+        default:
+          description: Error
+  /hyphenation/{languageCode}:
+    parameters:
+    - name: languageCode
+      in: path
+      required: true
+      example: se
+      description: The specified language
+      schema:
+        type: string
+    post:
+      operationId: postHyphenate
+      tags:
+        - Hyphenation
+      summary: Returns hyphenation patterns for each word in the text
+      description: Returns hyphenation results for the supplied text and language
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/HyphenationRequest"
+      responses:
+        '200':
+          description: List of hyphenation results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HyphenationResult"
         default:
           description: Error
   /preferences/grammar/{languageCode}:
@@ -135,6 +167,11 @@ components:
           items: 
             type: string
             example: "msyn-compound"
+    HyphenationRequest:
+      type: object
+      required:
+        - text
+
     GrammarError:
       type: object
       required:
@@ -237,6 +274,45 @@ components:
           additionalProperties:
             type: string
           example: { "tag": "description" }
+
+    HyphenationResult:
+      type: object
+      required:
+        - text
+        - results
+      properties:
+        text:
+          type: string
+          description: The supplied text, one or more words
+          example: ođasmahttinministtar ođasmahtinministtar
+        results:
+          type: array
+          items:
+            type: object
+            required:
+              - word
+              - patterns
+            properties:
+              word:
+                type: string
+                description: the supplied word
+                example: ođasmahtinministtar
+              patterns:
+                type: array
+                items:
+                  type: object
+                  required:
+                    - value
+                    - weight
+                  properties:
+                    value:
+                      type: string
+                      description: Hyphenation pattern
+                      example: o^đas^maht^tin#mi^nist^tar
+                    weight:
+                      type: number
+                      description: Weight of the suggestion
+                      example: 60.000000
 
     LanguageOptionsResult:
       type: object
