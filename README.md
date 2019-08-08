@@ -26,13 +26,15 @@ tests
       |
       |--grammar
          |  se.zcheck
+      |--hyphenation
+         |  se.hfstol
       |--spelling
          |  se.zhfst
 ```
 
 The base `data_files` folder is expected to have both `se` and `smj`
 grammar (`.zcheck`) and checker (`.zhfst`) files for the purposes of testing the file watcher, and
-the `se` files are also expected to be present in the `spelling` and `grammar` folders for testing loading of files at startup.
+the `se` files are also expected to be present in the `spelling`, `hyphenation`, and `grammar` folders for testing loading of files at startup.
 
 - run `cargo test`
 

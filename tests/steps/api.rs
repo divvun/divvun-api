@@ -137,13 +137,14 @@ steps!(crate::MyWorld => {
                 "query": "query { suggestions(text: \"pákhat\", language: \"se\") {\
                     speller { results { word suggestions { value } } }\
                     grammar { errs { errorText errorCode description } }\
+                    hyphenation { results { patterns { value weight } } }\
                      } }"}))
             .send().unwrap().json().unwrap();
 
         world.json = response;
     };
 
-    then "I get back a JSON object with both a Speller and Grammar response" |world, _step| {
+    then "I get back a JSON object with a Speller and Grammar, and Hyphenation response" |world, _step| {
         let suggestions = &world.json["data"]["suggestions"];
         assert_ne!(suggestions, &json!(null), "no data or suggestions returned");
 
@@ -152,6 +153,9 @@ steps!(crate::MyWorld => {
 
         let speller = &suggestions["speller"];
         assert_ne!(speller, &json!(null), "no speller response");
+
+        let hyphenation = &suggestions["hyphenation"];
+        assert_ne!(hyphenation, &json!(null), "no hyphenation response");
 
         assert_eq!(&json!({
           "errs": [
@@ -179,5 +183,10 @@ steps!(crate::MyWorld => {
             }]
           }]
         }), speller);
+
+        assert_eq!(&json!({"results":[
+            {"patterns":[
+                {"value":"pák^hat","weight":"5000.000000"}]}
+        ]}), hyphenation);
     };
 });
