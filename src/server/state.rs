@@ -3,9 +3,9 @@ use std::io;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use actix::Addr;
 use actix_web::error::ResponseError;
 use actix_web::HttpResponse;
-use divvunspell::archive::SpellerArchive;
 use failure::Fail;
 use futures::future::{err, ok, Future};
 use hashbrown::HashMap;
@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 use crate::config::Config;
+use crate::file_utils::get_file_info;
 use crate::graphql::schema::create_schema;
 use crate::graphql::schema::Schema;
 use crate::language::data_files::{get_data_files, DataFileType};
@@ -150,59 +151,35 @@ fn get_speller(config: &Config) -> AsyncSpeller {
             },
         );
 
-    let spellers = spelling_data_files
-        .into_iter()
-        .map(|f| {
-            let lang_code = f
-                .file_stem()
-                .expect(&format!("oops, didn't find a file stem for {:?}", f))
-                .to_str()
-                .unwrap();
+    let speller = AsyncSpeller {
+        spellers: Arc::new(RwLock::new(
+            HashMap::<String, Addr<DivvunSpellExecutor>>::new(),
+        )),
+    };
 
-            let speller_path = f.to_str().unwrap();
-            let ar = SpellerArchive::new(speller_path);
-            let owned_language = lang_code.to_owned();
-
-            (
-                lang_code.into(),
-                actix::Supervisor::start_in_arbiter(&actix::Arbiter::new(), |_| {
-                    DivvunSpellExecutor {
-                        speller_archive: ar.unwrap(),
-                        language: owned_language,
-                        terminated: false,
-                    }
-                }),
-            )
-        })
-        .collect();
-
-    AsyncSpeller {
-        spellers: Arc::new(RwLock::new(spellers)),
+    for file in spelling_data_files {
+        if let Some(file_info) = get_file_info(&file) {
+            speller.add(file_info.stem, file_info.path);
+        }
     }
+
+    speller
 }
 
 fn get_gramchecker(grammar_data_files: &Vec<PathBuf>) -> AsyncGramchecker {
-    let gramcheckers = grammar_data_files
-        .to_owned()
-        .into_iter()
-        .map(|f| {
-            let lang_code = f.file_stem().unwrap().to_str().unwrap().to_owned();
+    let gramchecker = AsyncGramchecker {
+        gramcheckers: Arc::new(RwLock::new(
+            HashMap::<String, Addr<GramcheckExecutor>>::new(),
+        )),
+    };
 
-            let grammar_checker_path = f.to_str().unwrap().to_owned();
-
-            (
-                lang_code.to_owned(),
-                actix::Supervisor::start_in_arbiter(&actix::Arbiter::new(), move |_| {
-                    GramcheckExecutor::new(&grammar_checker_path, &lang_code.to_owned())
-                        .expect(&format!("not found: {}", grammar_checker_path))
-                }),
-            )
-        })
-        .collect();
-
-    AsyncGramchecker {
-        gramcheckers: Arc::new(RwLock::new(gramcheckers)),
+    for file in grammar_data_files {
+        if let Some(file_info) = get_file_info(&file) {
+            gramchecker.add(file_info.stem, file_info.path);
+        }
     }
+
+    gramchecker
 }
 
 fn get_hyphenation(config: &Config) -> AsyncHyphenation {
@@ -214,34 +191,19 @@ fn get_hyphenation(config: &Config) -> AsyncHyphenation {
             },
         );
 
-    let hyphenators = hyphenation_data_files
-        .into_iter()
-        .map(|f| {
-            let lang_code = f
-                .file_stem()
-                .expect(&format!("oops, didn't find a file stem for {:?}", f))
-                .to_str()
-                .unwrap();
+    let hyphenator = AsyncHyphenation {
+        hyphenators: Arc::new(RwLock::new(
+            HashMap::<String, Addr<HyphenationExecutor>>::new(),
+        )),
+    };
 
-            let hyphenator_path = f.to_str().unwrap().to_owned();
-            let owned_language = lang_code.to_owned();
-
-            (
-                lang_code.into(),
-                actix::Supervisor::start_in_arbiter(&actix::Arbiter::new(), move |_| {
-                    HyphenationExecutor {
-                        path: hyphenator_path.to_owned(),
-                        language: owned_language,
-                        terminated: false,
-                    }
-                }),
-            )
-        })
-        .collect();
-
-    AsyncHyphenation {
-        hyphenators: Arc::new(RwLock::new(hyphenators)),
+    for file in hyphenation_data_files {
+        if let Some(file_info) = get_file_info(&file) {
+            hyphenator.add(file_info.stem, file_info.path);
+        }
     }
+
+    hyphenator
 }
 
 fn get_gramcheck_preferences(
