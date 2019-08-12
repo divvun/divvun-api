@@ -59,7 +59,7 @@ pub struct HyphenationResponse {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct HyphenationResult {
     pub word: String,
-    pub patterns: Vec<HyphenationPattern>,
+    pub hyphenations: Vec<HyphenationPattern>,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -99,7 +99,7 @@ impl Handler<HyphenationRequest> for HyphenationExecutor {
                     .trim()
                     .to_string();
 
-                let suggestions = result
+                let hyphenations = result
                     .lines()
                     .map(|line| {
                         let components: Vec<&str> = line.split("\t").collect();
@@ -125,7 +125,7 @@ impl Handler<HyphenationRequest> for HyphenationExecutor {
 
                 Ok(HyphenationResult {
                     word: word.to_owned(),
-                    patterns: suggestions,
+                    hyphenations,
                 })
             })
             .collect::<Result<Vec<HyphenationResult>, ApiError>>()?;

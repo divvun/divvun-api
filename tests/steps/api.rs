@@ -103,10 +103,10 @@ steps!(crate::MyWorld => {
 
         assert_eq!(
         json!({"text":"ođasmahttinministtar ođasmahtinministtar","results":[
-            {"word":"ođasmahttinministtar", "patterns":[
+            {"word":"ođasmahttinministtar", "hyphenations":[
                 {"value":"o^đas^maht^tin#mi^nist^tar","weight":60.000000},
                 {"value":"o^đas^maht^tin^mi^nist^tar","weight":5000.000000}]},
-            {"word":"ođasmahtinministtar","patterns":[
+            {"word":"ođasmahtinministtar","hyphenations":[
                 {"value":"o^đas^mah^tin^mi^nist^tar","weight":5000.000000}]}]}),
         serde_json::to_value(&response).unwrap());
     };
@@ -141,7 +141,7 @@ steps!(crate::MyWorld => {
                 "query": "query { suggestions(text: \"pákhat\", language: \"se\") {\
                     speller { results { word suggestions { value } } }\
                     grammar { errs { errorText errorCode description } }\
-                    hyphenation { results { patterns { value weight } } }\
+                    hyphenation { results { hyphenations { value weight } } }\
                      } }"}))
             .send().unwrap().json().unwrap();
 
@@ -189,7 +189,7 @@ steps!(crate::MyWorld => {
         }), speller);
 
         assert_eq!(&json!({"results":[
-            {"patterns":[
+            {"hyphenations":[
                 {"value":"pák^hat","weight":5000.000000}]}
         ]}), hyphenation);
     };

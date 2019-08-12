@@ -87,7 +87,7 @@ paths:
       operationId: postHyphenate
       tags:
         - Hyphenation
-      summary: Returns hyphenation patterns for each word in the text
+      summary: Returns hyphenations for each word in the text
       description: Returns hyphenation results for the supplied text and language
       requestBody:
         content:
@@ -223,6 +223,36 @@ components:
           items:
             $ref: "#/components/schemas/GrammarError"
 
+    SpellerResult:
+      type: object
+      required:
+        - word
+        - isCorrect
+        - suggestions
+      properties:
+        word:
+          type: string
+          description: the supplied word
+          example: oainá
+        isCorrect:
+          type: boolean
+          description: Whether the word is spelled correctly
+          example: false
+        suggestions:
+          type: object
+          required:
+            - value
+            - weight
+          properties:
+            value:
+              type: string
+              description: Potential correction
+              example: oaidná
+            weight:
+              type: number
+              description: Weight of the correction
+              example: 18.432617
+
     SpellerResponse:
       type: object
       required:
@@ -236,34 +266,7 @@ components:
           results:
             type: array
             items:
-              type: object
-              required:
-                - word
-                - isCorrect
-                - suggestions
-              properties:
-                word:
-                  type: string
-                  description: the supplied word
-                  example: oainá
-                isCorrect:
-                  type: boolean
-                  description: Whether the word is spelled correctly
-                  example: false
-                suggestions:
-                  type: object
-                  required:
-                    - value
-                    - weight
-                  properties:
-                    value:
-                      type: string
-                      description: Potential correction
-                      example: oaidná
-                    weight:
-                      type: number
-                      description: Weight of the correction
-                      example: 18.432617
+              $ref: "#/components/schemas/SpellerResult"
 
     GramcheckPreferencesResponse:
       type: object
@@ -277,6 +280,33 @@ components:
     HyphenationResult:
       type: object
       required:
+        - word
+        - hyphenations
+      properties:
+        word:
+          type: string
+          description: the supplied word
+          example: ođasmahtinministtar
+        hyphenations:
+          type: array
+          items:
+            type: object
+            required:
+              - value
+              - weight
+            properties:
+              value:
+                type: string
+                description: Hyphenation pattern
+                example: o^đas^maht^tin#mi^nist^tar
+              weight:
+                type: string
+                description: Weight of the suggestion
+                example: 60.000000
+
+    HyphenationResponse:
+      type: object
+      required:
         - text
         - results
       properties:
@@ -287,31 +317,7 @@ components:
         results:
           type: array
           items:
-            type: object
-            required:
-              - word
-              - patterns
-            properties:
-              word:
-                type: string
-                description: the supplied word
-                example: ođasmahtinministtar
-              patterns:
-                type: array
-                items:
-                  type: object
-                  required:
-                    - value
-                    - weight
-                  properties:
-                    value:
-                      type: string
-                      description: Hyphenation pattern
-                      example: o^đas^maht^tin#mi^nist^tar
-                    weight:
-                      type: string
-                      description: Weight of the suggestion
-                      example: 60.000000
+            $ref: "#/components/schemas/HyphenationResult"
 
     AvailableLanguagesResponse:
       type: object

@@ -95,15 +95,15 @@ pub struct Hyphenation {
 #[derive(GraphQLObject)]
 pub struct HyphenationResult {
     pub word: String,
-    pub patterns: Vec<HyphenationPattern>,
+    pub hyphenations: Vec<HyphenationPattern>,
 }
 
 impl From<hyphenation::HyphenationResult> for HyphenationResult {
     fn from(item: hyphenation::HyphenationResult) -> Self {
         HyphenationResult {
             word: item.word,
-            patterns: item
-                .patterns
+            hyphenations: item
+                .hyphenations
                 .into_iter()
                 .map(|pattern| HyphenationPattern::from(pattern))
                 .collect(),
