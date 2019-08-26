@@ -55,7 +55,7 @@ pub struct SpellerSuggestion {
 impl From<Suggestion> for SpellerSuggestion {
     fn from(item: Suggestion) -> Self {
         SpellerSuggestion {
-            value: item.value,
+            value: item.value.to_string(),
             weight: item.weight as f64,
         }
     }
