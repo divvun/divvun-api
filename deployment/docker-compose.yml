@@ -1,0 +1,15 @@
+version: "3.7"
+services:
+  divvun_api:
+    image: divvun/divvun-api
+    volumes:
+      - ./data:/app/data
+  caddy:
+    image: abiosoft/caddy
+    volumes:
+      - ./Caddyfile:/etc/Caddyfile
+      - ./.caddy:/root/.caddy
+      - ./msoffice:/app/msoffice
+    ports:
+      - "80:80"
+      - "443:443"

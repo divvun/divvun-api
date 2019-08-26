@@ -1,0 +1,9 @@
+api-giellalt.uit.no {
+    proxy / divvun_api:8080 {
+        transparent
+    }
+}
+
+api-giellalt.uit.no/msoffice {
+    root /app/msoffice
+}
