@@ -1,3 +1,4 @@
+set -e
 ROOT=$PWD
 DIST=$ROOT/dist
 rm -rf $DIST && mkdir $DIST
@@ -15,7 +16,7 @@ cd $ROOT
 echo "copying configs"
 cp docker-compose.yml $DIST
 cp Caddyfile $DIST
-cp run.sh $DIST
+cp install.sh $DIST
 cp divvun-api.service $DIST
 
 docker build -t divvun/divvun-api ..
