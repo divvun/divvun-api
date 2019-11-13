@@ -3,5 +3,7 @@ grammar
 spelling
 features
 docs
-deployment
+deployment/dist
+deployment/divvun-gramcheck-web
+deployment/dist.tar.gz
 data

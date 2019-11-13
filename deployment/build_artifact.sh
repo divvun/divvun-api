@@ -1,4 +1,6 @@
-set -e
+#!/bin/bash
+set -euxo pipefail
+
 ROOT=$PWD
 DIST=$ROOT/dist
 rm -rf $DIST && mkdir $DIST

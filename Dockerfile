@@ -1,4 +1,4 @@
-FROM rust:1.36 AS builder
+FROM rust:latest AS builder
 WORKDIR /build
 ADD . .
 RUN cargo build --all --release
