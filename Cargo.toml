@@ -17,7 +17,7 @@ phf_codegen = "0.7.24"
 serde = { version = "1.0.99", features = ["derive"] }
 
 [dependencies]
-actix-web = "1.0.5"
+actix-web = "1.0.9"
 actix-cors = "0.1.0"
 actix = "0.8.3"
 log = "0.4.8"
