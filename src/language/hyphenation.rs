@@ -11,8 +11,8 @@ use serde::{Deserialize, Serialize};
 
 use divvunspell::tokenizer::Tokenize;
 
-use crate::server::state::{LanguageSuggestions, UnhoistFutureExt};
 use crate::error::ApiError;
+use crate::server::state::{LanguageSuggestions, UnhoistFutureExt};
 
 pub struct HyphenationExecutor {
     pub path: String,
@@ -77,7 +77,7 @@ impl Handler<HyphenationRequest> for HyphenationExecutor {
 
     fn handle(&mut self, msg: HyphenationRequest, _: &mut Self::Context) -> Self::Result {
         let cloned_text = msg.text.clone();
-        let words = cloned_text.words().into_iter();
+        let words = cloned_text.word_indices().map(|x| x.1).into_iter();
 
         let results = words
             .map(|word| {

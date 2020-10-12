@@ -8,6 +8,7 @@ use hashbrown::HashMap;
 use parking_lot::RwLock;
 
 use crate::config::Config;
+use crate::error::ApiError;
 use crate::file_utils::get_file_info;
 use crate::graphql::schema::create_schema;
 use crate::graphql::schema::Schema;
@@ -21,7 +22,6 @@ use crate::language::hyphenation::{
 use crate::language::speller::{
     AsyncSpeller, DivvunSpellExecutor, SpellerRequest, SpellerResponse,
 };
-use crate::error::ApiError;
 
 pub struct LanguageFunctions {
     pub spelling_suggestions:

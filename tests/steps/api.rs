@@ -1,7 +1,7 @@
+use divvun_api::error::ApiError;
 use divvun_api::language::grammar::GramcheckResponse;
 use divvun_api::language::hyphenation::HyphenationResponse;
 use divvun_api::language::speller::SpellerResponse;
-use divvun_api::error::ApiError;
 
 steps!(crate::MyWorld => {
     given "I have loaded `se` grammar, speller, and hyphenator files" |world, _step| {

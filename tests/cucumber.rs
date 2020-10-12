@@ -8,11 +8,11 @@ use std::path::PathBuf;
 use std::{env, thread, time};
 
 use divvun_api::config::Config;
+use divvun_api::error::ApiError;
 use divvun_api::init::{init_config, init_system};
 use divvun_api::language::grammar::GramcheckResponse;
 use divvun_api::language::hyphenation::HyphenationResponse;
 use divvun_api::language::speller::SpellerResponse;
-use divvun_api::error::ApiError;
 
 mod steps;
 use steps::api;

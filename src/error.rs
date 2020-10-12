@@ -1,10 +1,10 @@
 use std::io;
 
+use actix_web::error::ResponseError;
+use actix_web::HttpResponse;
 use failure::Fail;
 use log::error;
 use serde::{Deserialize, Serialize};
-use actix_web::error::ResponseError;
-use actix_web::HttpResponse;
 use serde_json::json;
 
 #[derive(Fail, Debug, Deserialize, Serialize, Clone)]

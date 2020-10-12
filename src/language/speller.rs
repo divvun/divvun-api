@@ -1,21 +1,20 @@
 use std::sync::Arc;
 
 use actix::prelude::*;
-use divvunspell::archive::SpellerArchive;
+use divvunspell::archive::{zip::ZipSpellerArchive, SpellerArchive};
 use futures::future::{err, ok, Future};
 use hashbrown::HashMap;
 use log::{info, warn};
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
 
-use crate::server::state::{LanguageSuggestions, UnhoistFutureExt};
 use crate::error::ApiError;
+use crate::server::state::{LanguageSuggestions, UnhoistFutureExt};
 use divvunspell::speller::suggestion::Suggestion;
-use divvunspell::speller::SpellerConfig;
 use divvunspell::tokenizer::Tokenize;
 
 pub struct DivvunSpellExecutor {
-    pub speller_archive: SpellerArchive,
+    pub speller_archive: Arc<dyn SpellerArchive>,
     pub language: String,
     pub terminated: bool,
 }
@@ -61,28 +60,15 @@ impl Handler<SpellerRequest> for DivvunSpellExecutor {
         let speller = self.speller_archive.speller();
 
         let cloned_text = msg.text.clone();
-        let words = cloned_text.words().into_iter();
+        let words = cloned_text.word_indices().map(|x| x.1).into_iter();
+        // let words = cloned_text.words().into_iter();
 
         let results: Vec<SpellerResult> = words
             .map(|word| {
                 let cloned_speller = self.speller_archive.speller().clone();
                 let is_correct = Arc::clone(&speller).is_correct(word);
 
-                let suggestions = cloned_speller
-                    .suggest_with_config(
-                        word,
-                        &SpellerConfig {
-                            n_best: Some(5),
-                            max_weight: Some(10000f32),
-                            beam: None,
-                            with_caps: true,
-                            pool_start: 128,
-                            pool_max: 128,
-                            seen_node_sample_rate: 20,
-                        },
-                    )
-                    .into_iter()
-                    .collect();
+                let suggestions = cloned_speller.suggest(word).into_iter().collect();
 
                 SpellerResult {
                     word: word.to_owned(),
@@ -157,12 +143,14 @@ impl LanguageSuggestions for AsyncSpeller {
         let mut lock = self.spellers.write();
 
         let speller_path = path.to_owned();
-        let ar = SpellerArchive::new(&speller_path);
 
         let owned_language = language.to_owned();
         let speller = actix::Supervisor::start_in_arbiter(&actix::Arbiter::new(), move |_| {
+            let ar = ZipSpellerArchive::open(&std::path::Path::new(&speller_path))
+                .map(|x| Arc::new(x) as _)
+                .unwrap();
             DivvunSpellExecutor {
-                speller_archive: ar.unwrap(),
+                speller_archive: ar,
                 language: owned_language,
                 terminated: false,
             }
