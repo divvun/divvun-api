@@ -73,7 +73,7 @@ pub struct InnerState {
 pub fn create_state(config: &Config) -> State {
     let grammar_data_files = get_data_files(config.data_file_dir.as_path(), DataFileType::Grammar)
         .unwrap_or_else(|e| {
-            eprintln!("Error getting grammar data files: {}", e);
+            log::error!("Error getting grammar data files: {}", e);
             vec![]
         });
 
@@ -95,7 +95,7 @@ fn get_speller(config: &Config) -> AsyncSpeller {
     let spelling_data_files =
         get_data_files(config.data_file_dir.as_path(), DataFileType::Spelling).unwrap_or_else(
             |e| {
-                eprintln!("Error getting spelling data files: {}", e);
+                log::error!("Error getting spelling data files: {}", e);
                 vec![]
             },
         );
@@ -135,7 +135,7 @@ fn get_hyphenation(config: &Config) -> AsyncHyphenator {
     let hyphenation_data_files =
         get_data_files(config.data_file_dir.as_path(), DataFileType::Hyphenation).unwrap_or_else(
             |e| {
-                eprintln!("Error getting hyphenation data files: {}", e);
+                log::error!("Error getting hyphenation data files: {}", e);
                 vec![]
             },
         );
