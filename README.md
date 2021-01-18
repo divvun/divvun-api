@@ -2,7 +2,7 @@
 
 Starts a web server for accessing the Divvun spellcheck API.
 
-See https://divvun.github.io/divvun-api/docs/index.html for installation and usage documentation instructions.
+See https://divvun.github.io/divvun-api/index.html for installation and usage documentation instructions.
 
 ## OpenAPI
 
