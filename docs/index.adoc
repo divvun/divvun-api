@@ -56,7 +56,7 @@ Example for checking the spelling of a word with curl on the default server:
 
 [source]
 ----
-curl -X POST -H 'Content-Type: application/json' -i 'http://127.0.0.1:8080/speller/se' --data '{"word": "pákhat"}'
+curl -X POST -H 'Content-Type: application/json' -i 'https://api-giellalt.uit.no/speller/se' --data '{"word": "pákhat"}'
 ----
 
 And the expected output:
@@ -71,7 +71,7 @@ Grammar request:
 
 [source]
 ----
-curl -X POST -H 'Content-Type: application/json' -i 'http://127.0.0.1:8080/grammar/se' --data '{"text": "Danne lea politijuristtaide eanemus praktihkkalaččat vuogas dan dahkat Čáhcesullos."}'
+curl -X POST -H 'Content-Type: application/json' -i 'https://api-giellalt.uit.no/grammar/se' --data '{"text": "Danne lea politijuristtaide eanemus praktihkkalaččat vuogas dan dahkat Čáhcesullos."}'
 ----
 
 The Grammar Checker provides more involved output:
@@ -91,7 +91,7 @@ A https://github.com/graphql/graphiql[GraphiQL] interface will be hosted at the 
 
 [source]
 ----
-curl -X POST -H 'Content-Type: application/json' -i 'http://127.0.0.1:8080/graphql' --data  '{ "query": "query { suggestions(text: \"pákhat\", language: \"se\") { speller { isCorrect }, grammar { errs { startIndex endIndex errorCode description suggestions title } } } }" }'
+curl -X POST -H 'Content-Type: application/json' -i 'https://api-giellalt.uit.no/graphql' --data  '{ "query": "query { suggestions(text: \"pákhat\", language: \"se\") { speller { isCorrect }, grammar { errs { startIndex endIndex errorCode description suggestions title } } } }" }'
 ----
 
 Sample output:
