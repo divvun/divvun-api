@@ -8,7 +8,7 @@ See https://divvun.github.io/divvun-api/index.html for installation and usage do
 
 The OpenAPI documentation is generated with [ReDoc](https://github.com/Redocly/redoc) and hosted at  https://divvun.github.io/divvun-api/redoc-static.html
 
-To refresh the documentation, install the [redoc-cli](https://github.com/Redocly/redoc/blob/master/cli/README.md) NPM package and run `redoc-cli bundle openapi.yml`.
+To refresh the documentation, install the [redoc-cli](https://github.com/Redocly/redoc/blob/master/cli/README.md) NPM package (`npm i -g redoc-cli`) and run `redoc-cli bundle openapi.yml`.
 This will generate a `redoc-static.html` file that needs to be placed in the `docs` folder.
 
 ## Testing
