@@ -11,6 +11,8 @@ The OpenAPI documentation is generated with [ReDoc](https://github.com/Redocly/r
 To refresh the documentation, install the [redoc-cli](https://github.com/Redocly/redoc/blob/master/cli/README.md) NPM package (`npm i -g redoc-cli`) and run `redoc-cli bundle openapi.yml`.
 This will generate a `redoc-static.html` file that needs to be placed in the `docs` folder.
 
+To refresh `docs/index.html`, `cd docs/` and run `asciidoctor index.adoc`.
+
 ## Testing
 
 Tests use the files in `tests/resources/data_files`. The files need to be organized as follows before running `cargo test`:
