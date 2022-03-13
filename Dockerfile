@@ -11,5 +11,6 @@ RUN apt-get update && apt-get upgrade -y
 WORKDIR /app/
 COPY --from=builder /build/target/release/divvun-api .
 COPY deployment/config.toml .
+ENV LANG C.UTF-8
 VOLUME data
 CMD ["./divvun-api", "-c", "config.toml"]
