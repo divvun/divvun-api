@@ -3,7 +3,7 @@ WORKDIR /build
 ADD . .
 RUN cargo build --all --release
 
-FROM debian:stretch-slim
+FROM debian:bullseye-slim
 RUN apt-get update && apt-get install -y wget
 RUN wget https://apertium.projectjj.com/apt/install-nightly.sh && bash install-nightly.sh
 RUN apt-get update && apt-get install -y divvun-gramcheck hfst
