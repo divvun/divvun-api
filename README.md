@@ -104,11 +104,14 @@ c642b882d7d8: Loading layer [==================================================>
 Loaded image: divvun/divvun-api:v2
 ```
 
+The default user is API. Switch to it, go to the deploy directory and change the docker-compose to use your new tag. The restart docker-compose and start tailing the newly started divvun-api container. 
+
 ```sh
 su api -s /bin/bash
 cd /home/api/dist
 nano -w docker-compose.yml #change the image to use :v2
 docker-compose restart
+docker logs -n10 -f dist_divvun_api_1
 ```
 
 And then you rerun your litmus tests. Make sure to change the languages around so you're not testing.. something that would have worked anyway.
