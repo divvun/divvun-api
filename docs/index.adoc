@@ -56,7 +56,7 @@ Example for checking the spelling of a word with curl on the default server:
 
 [source]
 ----
-curl -X POST -H 'Content-Type: application/json' -i 'https://api-giellalt.uit.no/speller/se' --data '{"word": "pákhat"}'
+curl -X POST -H 'Content-Type: application/json' -i 'https://api-giellalt.uit.no/speller/se' --data '{"text": "pákhat"}'
 ----
 
 And the expected output:
