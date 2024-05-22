@@ -548,6 +548,18 @@ at runtime.</p>
 <p>Most functions are mapped to endpoints in the form of <code>/{function}/{languageCode}</code>. For example, spelling requests
 for the Northern Sámi language are to be made to <code>/speller/se</code>.</p>
 </div>
+<div class="admonitionblock note">
+<table>
+<tr>
+<td class="icon">
+<div class="title">Note</div>
+</td>
+<td class="content">
+The length of the data argument below (the text between the quotes following <code>"text:"</code> in the examples below) is limited to 2^15-12 bytes, ie 32 756 bytes. Remember that non-ASCII characters will use at least two bytes each in UTF-8 encoding, so in practice, the usable amount of text varies by language.
+</td>
+</tr>
+</table>
+</div>
 <div class="paragraph">
 <p>Example for checking the spelling of a word with curl on the default server:</p>
 </div>
