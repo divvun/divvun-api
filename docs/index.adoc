@@ -45,7 +45,7 @@ at runtime.
 
 === API
 
- https://divvun.github.io/divvun-api/redoc-static.html[API Overview]
+link:https://divvun.github.io/divvun-api/redoc-static.html[API Overview]
 
 ==== REST
 
